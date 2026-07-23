@@ -808,24 +808,58 @@ body {
   animation: spin 1s linear infinite;
 }
 
-/* Pulsating laser for scanner */
-.scanner-laser {
+/* Ocultar el lienzo de dibujo nativo de html5-qrcode para evitar desalineaciones por GPU/escala */
+#camera-scanner-view canvas {
+  display: none !important;
+}
+
+/* Máscara opaca sobre el visor con recorte limpio en la zona de enfoque */
+.custom-scanner-mask {
   position: absolute;
-  left: 10%;
-  right: 10%;
-  height: 3px;
-  background: var(--color-primary);
-  box-shadow: 0 0 8px var(--color-primary);
-  top: 50%;
-  z-index: 10;
-  animation: scan-pulse 2s ease-in-out infinite;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
 }
 
-@keyframes scan-pulse {
-  0% { top: 15%; opacity: 0.8; }
-  50% { top: 85%; opacity: 0.8; }
-  100% { top: 15%; opacity: 0.8; }
+.custom-focus-box {
+  width: 85%;
+  aspect-ratio: 4.5454; /* 1 / 0.22 = 4.5454 (Coincidencia 1:1 con qrbox.height = 22%) */
+  border: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  /* Sombra radial gigante que simula el fondo oscurecido alrededor de la ranura */
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.4), 0 0 0 9999px rgba(6, 7, 10, 0.75);
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Línea láser de escaneo fija y perfectamente centrada dentro del recuadro de lectura */
+.custom-laser-line {
+  position: absolute;
+  left: 3%;
+  right: 3%;
+  top: 50%;
+  height: 3px;
+  background: var(--color-primary);
+  box-shadow: 0 0 12px var(--color-primary), 0 0 2px #fff;
+  transform: translateY(-50%);
+  animation: custom-laser-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes custom-laser-glow {
+  0% {
+    opacity: 0.5;
+    box-shadow: 0 0 6px var(--color-primary);
+  }
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 15px var(--color-primary), 0 0 4px #fff;
+  }
 }
 
 /* Custom Grid components */

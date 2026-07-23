@@ -305,8 +305,14 @@ export default function QrScanner({ onScanSuccess, onClose }) {
             </button>
           )}
 
-          {/* Animated Scanning Line */}
-          {!isInitializing && !errorMsg && <div className="scanner-laser"></div>}
+          {/* Custom HTML/CSS Scanner Bounding Box Overlay (100% Reliable on Mobiles) */}
+          {!isInitializing && !errorMsg && (
+            <div className="custom-scanner-mask">
+              <div className="custom-focus-box">
+                <div className="custom-laser-line"></div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Zoom controller slider */}
