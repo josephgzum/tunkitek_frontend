@@ -76,12 +76,12 @@ export default function QrScanner({ onScanSuccess, onClose }) {
 
         const config = {
           fps: 15,
-          // Narrower vertical slit specifically optimized for long 1D linear barcodes
+          // Visor más grande y adaptado para lectura rápida de códigos lineales SN
           qrbox: (width, height) => {
-            const size = Math.min(width, height) * 0.7;
+            const size = Math.min(width, height) * 0.8;
             return {
-              width: size * 1.5,
-              height: size * 0.38
+              width: size * 1.6,
+              height: size * 0.5
             };
           },
           aspectRatio: 1.333334
@@ -123,9 +123,18 @@ export default function QrScanner({ onScanSuccess, onClose }) {
                     // Zoom support check
                     if (capabilities && capabilities.zoom) {
                       setHasZoomSupport(true);
-                      setZoomMin(capabilities.zoom.min || 1);
-                      setZoomMax(capabilities.zoom.max || 3);
-                      setZoomVal(track.getSettings().zoom || 1);
+                      const minZoom = capabilities.zoom.min || 1;
+                      const maxZoom = capabilities.zoom.max || 3;
+                      setZoomMin(minZoom);
+                      setZoomMax(maxZoom);
+                      
+                      // Ajustar a 2.0x por defecto (acotado entre min y max del hardware)
+                      const defaultZoom = Math.min(Math.max(2.0, minZoom), maxZoom);
+                      setZoomVal(defaultZoom);
+                      
+                      track.applyConstraints({
+                        advanced: [{ zoom: defaultZoom }]
+                      }).catch(e => console.error("Error aplicando zoom inicial 2x:", e));
                     }
 
                     // Flashlight support check
@@ -248,7 +257,7 @@ export default function QrScanner({ onScanSuccess, onClose }) {
 
   return (
     <div className="scanner-overlay">
-      <div className="scanner-card glass" style={{ maxWidth: "420px" }}>
+      <div className="scanner-card glass" style={{ maxWidth: "560px", width: "95%" }}>
         <div className="scanner-header">
           <h3>Escanear Código de Barras / SN</h3>
           <p className="scanner-subtitle">Apunta con la cámara. Mantén distancia y haz zoom si es necesario.</p>

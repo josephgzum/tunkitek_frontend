@@ -929,7 +929,7 @@ body {
 
 /* Custom layout for inputs in Entrada */
 .multiple-entries {
-  max-height: 250px;
+  max-height: 400px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -946,6 +946,9 @@ body {
 }
 
 @media (max-width: 576px) {
+  .multiple-entries {
+    max-height: 500px;
+  }
   .entry-row {
     flex-direction: column;
     align-items: stretch;
