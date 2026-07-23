@@ -5919,9 +5919,9 @@ export default function App() {
                     <table className="custom-table" style={{ fontSize: "0.85rem" }}>
                         <thead>
                           <tr>
-                            <th style={{ width: "16%" }}>{creditsFilterType === "Cobrar" ? "Cliente" : "Proveedor"}</th>
-                            <th style={{ width: "12%" }}>Fecha</th>
-                            <th style={{ width: "36%" }}>Descripción / Operación</th>
+                            <th style={{ width: "18%" }}>{creditsFilterType === "Cobrar" ? "Cliente" : "Proveedor"}</th>
+                            <th style={{ width: "10%" }}>Fecha</th>
+                            <th style={{ width: "32%" }}>Descripción / Operación</th>
                             <th style={{ width: "9%", textAlign: "right" }}>Monto Total</th>
                             <th style={{ width: "9%", textAlign: "right" }}>Abonado</th>
                             <th style={{ width: "9%", textAlign: "right" }}>Saldo Pendiente</th>
