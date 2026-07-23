@@ -2261,9 +2261,41 @@ export default function App() {
   };
 
   const handleScanSuccess = (decodedText) => {
-    setScannerActive(false);
     const cleanedText = decodedText.trim();
     if (!cleanedText) return;
+
+    const upperText = cleanedText.toUpperCase();
+
+    // 1. Validaciones inteligentes de patrón para evitar escaneos erróneos de MAC/SN
+    if (scannerTarget.includes("mac")) {
+      const macClean = upperText.replace(/[:-]/g, "");
+      const isHex = /^[0-9A-F]{12}$/.test(macClean);
+      if (!isHex || (upperText.length !== 12 && upperText.length !== 17)) {
+        alert(`⚠️ Lectura incorrecta para MAC: "${cleanedText}" no es una dirección MAC válida (debe tener 12 dígitos hexadecimales A-F, 0-9).`);
+        // Reiniciar escáner forzando re-montaje para que intente de nuevo inmediatamente
+        setScannerActive(false);
+        setTimeout(() => setScannerActive(true), 150);
+        return;
+      }
+    } else if (scannerTarget.includes("sn")) {
+      // Si escaneó una MAC formateada (ej. AA:BB:CC...) para el campo SN
+      if (cleanedText.includes(":") || cleanedText.includes("-")) {
+        alert(`⚠️ Lectura incorrecta para SN: "${cleanedText}" parece una dirección MAC. Por favor apunta al código del Número de Serie (SN).`);
+        setScannerActive(false);
+        setTimeout(() => setScannerActive(true), 150);
+        return;
+      }
+      // La gran mayoría de SNs tienen un largo razonable
+      if (cleanedText.length < 6) {
+        alert(`⚠️ Lectura incorrecta: El código "${cleanedText}" es demasiado corto para ser un Número de Serie.`);
+        setScannerActive(false);
+        setTimeout(() => setScannerActive(true), 150);
+        return;
+      }
+    }
+
+    // Si pasó todas las validaciones cerramos el escáner
+    setScannerActive(false);
 
     if (scannerTarget === "salida-search") {
       setSalidaSearch(cleanedText);

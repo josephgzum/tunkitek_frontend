@@ -76,12 +76,12 @@ export default function QrScanner({ onScanSuccess, onClose }) {
 
         const config = {
           fps: 15,
-          // Visor más grande y adaptado para lectura rápida de códigos lineales SN
+          // Visor extremadamente angosto verticalmente para aislar códigos en etiquetas agrupadas (SN / MAC)
           qrbox: (width, height) => {
             const size = Math.min(width, height) * 0.8;
             return {
               width: size * 1.6,
-              height: size * 0.5
+              height: size * 0.22
             };
           },
           aspectRatio: 1.333334
