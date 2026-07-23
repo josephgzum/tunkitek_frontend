@@ -76,12 +76,13 @@ export default function QrScanner({ onScanSuccess, onClose }) {
 
         const config = {
           fps: 15,
-          // Visor extremadamente angosto verticalmente para aislar códigos en etiquetas agrupadas (SN / MAC)
+          // Visor dinámico adaptado al ancho real de la pantalla para evitar desbordes y ocultamiento del recuadro
           qrbox: (width, height) => {
-            const size = Math.min(width, height) * 0.8;
+            const boxWidth = Math.floor(width * 0.85);
+            const boxHeight = Math.floor(boxWidth * 0.22);
             return {
-              width: size * 1.6,
-              height: size * 0.22
+              width: boxWidth,
+              height: boxHeight
             };
           },
           aspectRatio: 1.333334
