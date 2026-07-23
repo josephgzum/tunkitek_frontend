@@ -2,9 +2,31 @@ import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { CameraOff, Camera, RefreshCw, Zap, ZapOff } from "lucide-react";
 
-export default function QrScanner({ onScanSuccess, onClose }) {
+// Loader dinámico para Tesseract.js (OCR de textos impresos)
+const loadTesseract = () => {
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) {
+      resolve(window.Tesseract);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/tesseract.js@5.0.3/dist/tesseract.min.js";
+    script.onload = () => {
+      if (window.Tesseract) {
+        resolve(window.Tesseract);
+      } else {
+        reject(new Error("Librería Tesseract cargada pero no definida globalmente."));
+      }
+    };
+    script.onerror = () => reject(new Error("No se pudo cargar el motor OCR. Revisa tu conexión a internet."));
+    document.head.appendChild(script);
+  });
+};
+
+export default function QrScanner({ scannerTarget = "", onScanSuccess, onClose }) {
   const [errorMsg, setErrorMsg] = useState("");
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
   const [devices, setDevices] = useState([]);
   const [selectedCameraId, setSelectedCameraId] = useState("");
   
@@ -256,6 +278,84 @@ export default function QrScanner({ onScanSuccess, onClose }) {
     }
   };
 
+  const captureFrame = () => {
+    const video = document.querySelector(`#${elementId} video`);
+    if (!video) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  };
+
+  const handleOcrScan = async () => {
+    setIsOcrProcessing(true);
+    try {
+      const dataUrl = captureFrame();
+      if (!dataUrl) throw new Error("No se pudo capturar la imagen de la cámara.");
+
+      const Tesseract = await loadTesseract();
+      console.log("Iniciando escaneo OCR...");
+      const result = await Tesseract.recognize(dataUrl, 'eng');
+      const text = result.data.text;
+      console.log("Texto extraído por OCR:", text);
+
+      // Algoritmo de extracción por Regex según el tipo de campo
+      const targetField = scannerTarget.toLowerCase();
+      let foundValue = "";
+
+      if (targetField.includes("mac")) {
+        // Expresión regular para buscar direcciones MAC en el bloque de texto
+        const cleanOcrText = text.toUpperCase().replace(/\s/g, "");
+        // Buscar 12 caracteres hex continuos o separados
+        const matches = cleanOcrText.match(/([0-9A-F]{2}[:-]){5}[0-9A-F]{2}|[0-9A-F]{12}/i);
+        if (matches) {
+          // Si tiene delimitadores los dejamos limpios para isMacFormat
+          const val = matches[0];
+          foundValue = val;
+        }
+      } else if (targetField.includes("sn")) {
+        // Buscar cadenas después de SN o S/N o GPON SN
+        const cleanLines = text.toUpperCase().split("\n");
+        for (let line of cleanLines) {
+          // Buscar patrones de SN o S/N
+          const matches = line.match(/(?:SN|S\/N|GPON\s*SN|SERIE)[:\-\s]*([0-9A-Z]{8,20})/i);
+          if (matches && matches[1]) {
+            foundValue = matches[1].trim();
+            break;
+          }
+        }
+        
+        // Si no se encontró por etiqueta, hacer barrido de palabras buscando prefijos conocidos (ZTE, HWTC, ASKY, ALCL, MSTC, ACHG)
+        if (!foundValue) {
+          const words = text.toUpperCase().split(/[\s,]+/);
+          for (let w of words) {
+            const cleanW = w.replace(/[^A-Z0-9]/gi, "").trim();
+            if (/^(ZTE|HWTC|ASKY|ALCL|FHTT|MSTC|48575443|5A544547|41434847)/i.test(cleanW) && cleanW.length >= 8 && cleanW.length <= 20) {
+              foundValue = cleanW;
+              break;
+            }
+          }
+        }
+      }
+
+      if (foundValue) {
+        if (navigator.vibrate) navigator.vibrate(100);
+        stopScanner().then(() => {
+          onScanSuccess(foundValue);
+        });
+      } else {
+        alert("⚠️ No se detectó ningún texto con formato de MAC o SN válido en la etiqueta. Intenta centrar el texto impreso, sostener el celular firme y tomar la foto de nuevo.");
+      }
+    } catch (err) {
+      console.error("Error en OCR:", err);
+      alert("Error procesando imagen: " + err.message);
+    } finally {
+      setIsOcrProcessing(false);
+    }
+  };
+
   return (
     <div className="scanner-overlay">
       <div className="scanner-card glass" style={{ maxWidth: "560px", width: "95%" }}>
@@ -359,8 +459,29 @@ export default function QrScanner({ onScanSuccess, onClose }) {
           </div>
         )}
 
-        <div className="scanner-actions" style={{ marginTop: "10px" }}>
-          <button onClick={handleClose} className="btn btn-secondary w-full">
+        <div className="scanner-actions" style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          {!isInitializing && !errorMsg && (
+            <button
+              type="button"
+              onClick={handleOcrScan}
+              disabled={isOcrProcessing}
+              className="btn btn-primary w-full"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px" }}
+            >
+              {isOcrProcessing ? (
+                <>
+                  <RefreshCw className="spinner" size={16} />
+                  <span>Procesando Texto (OCR)...</span>
+                </>
+              ) : (
+                <>
+                  <Camera size={16} />
+                  <span>Escanear Texto de Etiqueta (OCR)</span>
+                </>
+              )}
+            </button>
+          )}
+          <button onClick={handleClose} disabled={isOcrProcessing} className="btn btn-secondary w-full">
             Cancelar
           </button>
         </div>

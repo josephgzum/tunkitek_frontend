@@ -6392,6 +6392,7 @@ export default function App() {
       {/* SCANNER OVERLAY FOR CAMERA CAPTURING */}
       {scannerActive && (
         <QrScanner
+          scannerTarget={scannerTarget}
           onScanSuccess={handleScanSuccess}
           onClose={() => setScannerActive(false)}
         />
