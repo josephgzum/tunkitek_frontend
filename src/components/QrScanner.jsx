@@ -143,7 +143,14 @@ export default function QrScanner({ scannerTarget = "", onScanSuccess, onClose }
                   try {
                     const capabilities = track.getCapabilities();
                     
-                    // Zoom support check
+                    const constraints = {};
+
+                    // Enfoque continuo automático de cámara (Autofocus) si está disponible en el hardware
+                    if (capabilities && capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+                      constraints.focusMode = "continuous";
+                    }
+
+                    // Soporte de Zoom
                     if (capabilities && capabilities.zoom) {
                       setHasZoomSupport(true);
                       const minZoom = capabilities.zoom.min || 1;
@@ -151,16 +158,19 @@ export default function QrScanner({ scannerTarget = "", onScanSuccess, onClose }
                       setZoomMin(minZoom);
                       setZoomMax(maxZoom);
                       
-                      // Ajustar a 2.0x por defecto (acotado entre min y max del hardware)
-                      const defaultZoom = Math.min(Math.max(2.0, minZoom), maxZoom);
+                      // Establecemos un zoom inicial suave (1.2x) que no distorsione pero ayude a enfocar
+                      const defaultZoom = Math.min(Math.max(1.2, minZoom), maxZoom);
                       setZoomVal(defaultZoom);
-                      
-                      track.applyConstraints({
-                        advanced: [{ zoom: defaultZoom }]
-                      }).catch(e => console.error("Error aplicando zoom inicial 2x:", e));
+                      constraints.zoom = defaultZoom;
                     }
 
-                    // Flashlight support check
+                    if (Object.keys(constraints).length > 0) {
+                      track.applyConstraints({
+                        advanced: [constraints]
+                      }).catch(e => console.error("Error aplicando restricciones de enfoque/zoom:", e));
+                    }
+
+                    // Soporte de Linterna (Flash)
                     if (capabilities && capabilities.torch) {
                       setHasTorchSupport(true);
                     }
