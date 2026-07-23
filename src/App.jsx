@@ -429,11 +429,15 @@ export default function App() {
     if (data.currency) setCurrency(data.currency);
     if (data.catalog && data.catalog.length > 0) {
       setCatalog(data.catalog);
-      if (data.catalog.length > 0) {
-        setEntradaSelectedProductId(data.catalog[0].id);
+      setEntradaSelectedProductId(prev => {
+        if (prev && data.catalog.some(c => c.id === prev)) return prev;
+        return data.catalog[0].id;
+      });
+      setSalidaSelectedProductId(prev => {
+        if (prev && data.catalog.some(c => c.id === prev)) return prev;
         const firstNonSerialized = data.catalog.find(c => c.controlMethod !== "serialized" && c.type !== "ONU");
-        setSalidaSelectedProductId(firstNonSerialized ? firstNonSerialized.id : "");
-      }
+        return firstNonSerialized ? firstNonSerialized.id : "";
+      });
     }
     setLedger(sanitizedLedger);
     if (data.nonSerialized) setNonSerialized(data.nonSerialized);
@@ -1518,6 +1522,9 @@ export default function App() {
     const lotNameStr = entradaLotName.trim() || `Lote ${product.name} ${currentTimestamp}`;
     const isSerialized = product.controlMethod === "serialized" || product.type === "ONU";
 
+    let payloadQty = 1;
+    let payloadDevices = [];
+
     if (isSerialized) {
       const validRows = entradaRows.filter(r => r.sn.trim() !== "");
       if (validRows.length === 0) {
@@ -1539,90 +1546,62 @@ export default function App() {
         return;
       }
 
-      const newLot = {
-        id: lotId,
-        name: lotNameStr,
-        productId: product.id,
-        vendor: entradaVendor.trim() || "Proveedor General",
-        date: currentTimestamp,
-        purchasePricePerUnit: cost,
-        quantity: validRows.length,
-        type: product.type
-      };
-
-      const newDevices = validRows.map((r, idx) => ({
+      payloadQty = validRows.length;
+      payloadDevices = validRows.map((r, idx) => ({
         id: `dev-${Date.now()}-${idx}`,
-        productId: product.id,
         brand: product.brand,
         model: product.name.replace(`${product.brand} `, ""),
-        type: product.type,
         sn: r.sn.trim(),
         mac: r.mac.trim(),
         barcode: r.barcode.trim() || r.sn.trim(),
-        status: "Disponible",
-        lotId: lotId,
-        purchasePrice: cost,
-        salePrice: sale,
-        soldPrice: null,
-        soldDate: null,
-        soldTo: null,
-        dateAdded: currentTimestamp
+        salePrice: sale
       }));
+    } else {
+      const qty = parseInt(entradaNonSerializedQty);
+      if (isNaN(qty) || qty <= 0) {
+        alert("Ingresa una cantidad válida para productos no serializados.");
+        return;
+      }
+      payloadQty = qty;
+    }
 
-      const totalCost = cost * (isSerialized ? validRows.length : parseInt(entradaNonSerializedQty));
+    const totalCost = cost * payloadQty;
+    const initialVal = parseFloat(entradaInitialPayment) || 0;
 
-      if (entradaPaymentCondition === "Credito") {
-        const inicialVal = parseFloat(entradaInitialPayment) || 0;
-        if (inicialVal > totalCost) {
-          alert(`La cuota inicial no puede ser mayor al costo total de ${currency}${totalCost.toFixed(2)}.`);
-          return;
+    if (entradaPaymentCondition === "Credito" && initialVal > totalCost) {
+      alert(`La cuota inicial no puede ser mayor al costo total de ${currency}${totalCost.toFixed(2)}.`);
+      return;
+    }
+
+    const lotPayload = {
+      id: lotId,
+      name: lotNameStr,
+      productId: product.id,
+      vendor: entradaVendor.trim() || "Proveedor General",
+      purchasePricePerUnit: cost,
+      quantity: payloadQty,
+      type: product.type,
+      devices: payloadDevices,
+      paymentCondition: entradaPaymentCondition,
+      initialPayment: initialVal,
+      salePrice: sale
+    };
+
+    fetch(API_URL + "/api/lots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(lotPayload)
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Error al registrar la compra en el servidor.");
         }
-        const balance = Math.max(0, totalCost - inicialVal);
-        const newCredit = {
-          id: `cred-${Date.now()}`,
-          type: "Pagar",
-          clientOrVendor: entradaVendor.trim() || "Proveedor General",
-          totalAmount: totalCost,
-          paidAmount: inicialVal,
-          balance: balance,
-          status: balance <= 0.001 ? "Pagado" : "Pendiente",
-          date: currentTimestamp,
-          description: `Compra Lote: ${lotNameStr} (${product.name})`,
-          payments: inicialVal > 0 ? [
-            {
-              id: `pay-${Date.now()}`,
-              date: currentTimestamp,
-              amount: inicialVal,
-              paymentMethod: "Efectivo",
-              receiptImage: entradaReceiptImage || null,
-              note: "Cuota inicial en la compra"
-            }
-          ] : []
-        };
-
-        const updatedCredits = [...credits, newCredit];
-        const updatedLedger = inicialVal > 0 ? [
-          ...ledger,
-          {
-            id: `tx-${Date.now()}`,
-            type: "Egreso",
-            category: "Compra",
-            description: `Compra a Crédito (Cuota Inicial): ${lotNameStr}`,
-            amount: inicialVal,
-            date: currentTimestamp
-          }
-        ] : ledger;
-
-        updateLocalDB({
-          newDevices: isSerialized ? [...devices, ...newDevices] : devices,
-          newLots: [...lots, newLot],
-          newNonSerialized: isSerialized ? nonSerialized : updatedNonSerialized,
-          newLedger: updatedLedger,
-          newCredits: updatedCredits
-        });
-
-        alert(`¡Entrada registrada a CRÉDITO! Deuda con ${entradaVendor || 'Proveedor'}: ${currency}${balance.toFixed(2)}.`);
-
+        return res.json();
+      })
+      .then(() => {
+        alert(`¡Entrada registrada con éxito! Lote "${lotNameStr}" creado.`);
+        
+        // Limpiar formulario
         setEntradaPurchasePrice("");
         setEntradaSalePrice("");
         setEntradaLotName("");
@@ -1633,40 +1612,18 @@ export default function App() {
         setEntradaReceiptImage(null);
         setEntradaRows([{ id: Date.now(), sn: "", mac: "", barcode: "" }]);
         setActiveTab("inventory");
-        return;
-      }
 
-      const newTx = {
-        id: `tx-${Date.now()}`,
-        type: "Egreso",
-        category: "Compra",
-        description: isSerialized 
-          ? `Compra Lote: ${lotNameStr} (${validRows.length} ${product.type}s)`
-          : `Compra Lote: ${lotNameStr} (${entradaNonSerializedQty} ${product.name})`,
-        amount: totalCost,
-        date: currentTimestamp
-      };
-
-      updateLocalDB({
-        newDevices: isSerialized ? [...devices, ...newDevices] : devices,
-        newLots: [...lots, newLot],
-        newNonSerialized: isSerialized ? nonSerialized : updatedNonSerialized,
-        newLedger: [...ledger, newTx]
+        // Disparar sincronización inmediata
+        fetchServerDB().then(serverData => {
+          if (serverData && serverData.catalog) {
+            reloadDataFromDB(serverData);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error("Error en handleEntradaSubmit:", err);
+        alert(err.message || "No se pudo registrar la compra en el servidor MySQL.");
       });
-
-      alert(`¡Entrada registrada! Lote "${lotNameStr}" creado.`);
-    }
-
-    setEntradaPurchasePrice("");
-    setEntradaSalePrice("");
-    setEntradaLotName("");
-    setEntradaVendor("");
-    setEntradaNonSerializedQty("");
-    setEntradaInitialPayment("0.00");
-    setEntradaPaymentCondition("Contado");
-    setEntradaReceiptImage(null);
-    setEntradaRows([{ id: Date.now(), sn: "", mac: "", barcode: "" }]);
-    setActiveTab("inventory");
   };
 
   // Add Device to Multi-ONU Salida Cart

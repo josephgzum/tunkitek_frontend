@@ -429,7 +429,7 @@ export const fetchServerDB = async () => {
     const token = localStorage.getItem("tunkitek_token");
     const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
-    const [catRes, devRes, custRes, usrRes, vendRes, credRes, ledgRes, lotsRes, settRes] = await Promise.all([
+    const [catRes, devRes, custRes, usrRes, vendRes, credRes, ledgRes, lotsRes, settRes, nsRes] = await Promise.all([
       fetch(`${API_URL}/api/catalog`).catch(() => null),
       fetch(`${API_URL}/api/devices`).catch(() => null),
       fetch(`${API_URL}/api/customers`).catch(() => null),
@@ -438,7 +438,8 @@ export const fetchServerDB = async () => {
       fetch(`${API_URL}/api/credits`).catch(() => null),
       token ? fetch(`${API_URL}/api/ledger`, { headers }).catch(() => null) : Promise.resolve(null),
       fetch(`${API_URL}/api/lots`).catch(() => null),
-      fetch(`${API_URL}/api/settings`).catch(() => null)
+      fetch(`${API_URL}/api/settings`).catch(() => null),
+      fetch(`${API_URL}/api/non-serialized`).catch(() => null)
     ]);
 
     if (!catRes || !catRes.ok) return null;
@@ -452,6 +453,7 @@ export const fetchServerDB = async () => {
     const ledger = ledgRes && ledgRes.ok ? await ledgRes.json() : [];
     const lots = lotsRes && lotsRes.ok ? await lotsRes.json() : [];
     const settings = settRes && settRes.ok ? await settRes.json() : {};
+    const nonSerialized = nsRes && nsRes.ok ? await nsRes.json() : [];
 
     if (Array.isArray(catalog)) {
       return {
@@ -463,6 +465,7 @@ export const fetchServerDB = async () => {
         credits: Array.isArray(credits) ? credits : [],
         ledger: Array.isArray(ledger) ? ledger : [],
         lots: Array.isArray(lots) ? lots : [],
+        nonSerialized: Array.isArray(nonSerialized) ? nonSerialized : [],
         appName: settings.appName || "TUNKITEK",
         appSubtitle: settings.appSubtitle || "Gestión de Almacén e Inventario",
         appLogo: settings.appLogo || "/logo-tunqui-red.png",
