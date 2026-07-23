@@ -1861,91 +1861,50 @@ export default function App() {
         return;
       }
 
-      const updatedNonSerialized = nonSerialized.map(n => {
-        if (n.productId === product.id) {
-          return { ...n, qtyAvailable: n.qtyAvailable - qtyToSell };
-        }
-        return n;
-      });
-
       const totalSale = priceUnitVal * qtyToSell;
 
-      if (salidaPaymentCondition === "Credito") {
-        const inicialVal = parseFloat(salidaInitialPayment) || 0;
-        if (inicialVal > totalSale) {
-          alert(`La cuota inicial no puede ser mayor al precio total de ${currency}${totalSale.toFixed(2)}.`);
-          return;
-        }
-        const balance = Math.max(0, totalSale - inicialVal);
-        const newCredit = {
-          id: `cred-${Date.now()}`,
-          type: "Cobrar",
-          clientOrVendor: finalClientName,
-          totalAmount: totalSale,
-          paidAmount: inicialVal,
-          balance: balance,
-          status: balance <= 0.001 ? "Pagado" : "Pendiente",
-          date: currentTimestamp,
-          description: `Venta a Crédito: ${qtyToSell} ${product.name} - ${finalClientName}`,
-          payments: inicialVal > 0 ? [
-            {
-              id: `pay-${Date.now()}`,
-              date: currentTimestamp,
-              amount: inicialVal,
-              paymentMethod: "Efectivo",
-              receiptImage: salidaReceiptImage || null,
-              note: "Cuota inicial en la venta"
-            }
-          ] : []
-        };
-
-        const updatedCredits = [...credits, newCredit];
-        const updatedLedger = inicialVal > 0 ? [
-          ...ledger,
-          {
-            id: `tx-${Date.now()}`,
-            type: "Ingreso",
-            category: "Venta",
-            description: `Venta a Crédito (Cuota Inicial): ${qtyToSell} ${product.name} - ${finalClientName}`,
-            amount: inicialVal,
-            date: currentTimestamp
-          }
-        ] : ledger;
-
-        updateLocalDB({
-          newNonSerialized: updatedNonSerialized,
-          newLedger: updatedLedger,
-          newCredits: updatedCredits
-        });
-
-        setSalidaSuccessMsg(`¡Venta registrada a CRÉDITO a ${finalClientName}! Saldo por cobrar: ${currency}${balance.toFixed(2)}.`);
-        setSalidaQty("");
-        setSalidaInitialPayment("0.00");
-        setSalidaPaymentCondition("Contado");
-        setSalidaReceiptImage(null);
-        return;
-      }
-
-      const newTx = {
-        id: `tx-${Date.now()}`,
-        type: "Ingreso",
-        category: "Venta",
-        description: `Venta: ${qtyToSell} ${product.name} - ${finalClientName}`,
-        amount: totalSale,
-        date: currentTimestamp
+      const salePayload = {
+        productId: product.id,
+        quantity: qtyToSell,
+        customerId: salidaSelectedCustomerId || null,
+        customerName: finalClientName,
+        paymentCondition: salidaPaymentCondition,
+        initialPayment: parseFloat(salidaInitialPayment) || 0,
+        salePrice: priceUnitVal
       };
 
-      updateLocalDB({
-        newNonSerialized: updatedNonSerialized,
-        newLedger: [...ledger, newTx]
-      });
+      fetch(API_URL + "/api/non-serialized/sale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(salePayload)
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Error al registrar la venta no serializada en el servidor.");
+          }
+          return res.json();
+        })
+        .then(() => {
+          setSalidaSuccessMsg(`¡Venta registrada con éxito! ${qtyToSell} ${product.name} vendidos por ${currency}${totalSale}.`);
+          setSalidaQty("");
+          setSalidaInitialPayment("0.00");
+          setSalidaPaymentCondition("Contado");
+          setSalidaReceiptImage(null);
+          setSalidaManualClient("");
+          setTimeout(() => setSalidaSuccessMsg(""), 5000);
+          setActiveTab("inventory");
 
-      setSalidaSuccessMsg(`¡Venta registrada! ${qtyToSell} ${product.name} vendidos por ${currency}${totalSale}.`);
-
-      setSalidaQty("");
-      setSalidaInitialPayment("0.00");
-      setSalidaPaymentCondition("Contado");
-      setSalidaReceiptImage(null);
+          // Disparar sincronización inmediata
+          fetchServerDB().then(serverData => {
+            if (serverData && serverData.catalog) {
+              reloadDataFromDB(serverData);
+            }
+          });
+        })
+        .catch((err) => {
+          console.error("Error en venta no serializada:", err);
+          alert(err.message || "No se pudo registrar la venta en el servidor MySQL.");
+        });
     }
   };
 
@@ -1965,59 +1924,69 @@ export default function App() {
       return;
     }
 
-    const currentTimestamp = getFormattedDateTime();
-    const newPayment = {
-      id: `pay-${Date.now()}`,
-      date: currentTimestamp,
+    const payload = {
       amount: amountVal,
       paymentMethod: abonoMethod || "Yape",
-      receiptImage: abonoImage || null,
-      note: abonoNote.trim() || (selectedCreditForPayment.type === "Cobrar" ? "Abono a cuenta por cobrar" : "Abono a cuenta por pagar")
+      receiptUrl: abonoImage || null,
+      notes: abonoNote.trim() || (selectedCreditForPayment.type === "Cobrar" ? "Abono a cuenta por cobrar" : "Abono a cuenta por pagar")
     };
 
-    const newPaidAmount = selectedCreditForPayment.paidAmount + amountVal;
-    const newBalance = Math.max(0, selectedCreditForPayment.totalAmount - newPaidAmount);
-    const newStatus = newBalance <= 0.001 ? "Pagado" : "Pendiente";
+    fetch(API_URL + `/api/credits/${selectedCreditForPayment.id}/payment`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Error al registrar el abono en el servidor.");
+        }
+        return res.json();
+      })
+      .then(() => {
+        alert(`¡Abono de ${currency}${amountVal.toFixed(2)} registrado correctamente en MySQL!`);
+        setSelectedCreditForPayment(null);
+        setAbonoAmount("");
+        setAbonoImage(null);
+        setAbonoNote("");
 
-    const updatedCredit = {
-      ...selectedCreditForPayment,
-      paidAmount: newPaidAmount,
-      balance: newBalance,
-      status: newStatus,
-      payments: [...(selectedCreditForPayment.payments || []), newPayment]
-    };
-
-    const updatedCredits = credits.map(c => c.id === selectedCreditForPayment.id ? updatedCredit : c);
-
-    const isCobrar = selectedCreditForPayment.type === "Cobrar";
-    const newLedgerTx = {
-      id: `tx-${Date.now()}`,
-      type: isCobrar ? "Ingreso" : "Egreso",
-      category: isCobrar ? "Venta" : "Compra",
-      description: isCobrar
-        ? `Abono de Crédito (${abonoMethod}): ${selectedCreditForPayment.clientOrVendor} - ${selectedCreditForPayment.description}`
-        : `Pago de Crédito (${abonoMethod}): ${selectedCreditForPayment.clientOrVendor} - ${selectedCreditForPayment.description}`,
-      amount: amountVal,
-      date: currentTimestamp
-    };
-
-    updateLocalDB({
-      newCredits: updatedCredits,
-      newLedger: [...ledger, newLedgerTx]
-    });
-
-    setSelectedCreditForPayment(null);
-    setAbonoAmount("");
-    setAbonoImage(null);
-    setAbonoNote("");
-    alert(`¡Abono de ${currency}${amountVal.toFixed(2)} registrado correctamente!`);
+        // Disparar sincronización inmediata
+        fetchServerDB().then(serverData => {
+          if (serverData && serverData.catalog) {
+            reloadDataFromDB(serverData);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error("Error al guardar abono:", err);
+        alert(err.message || "Error al conectar con el servidor.");
+      });
   };
 
   const handleDeleteCredit = (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este registro de crédito?")) {
-      const updated = credits.filter(c => c.id !== id);
-      updateLocalDB({ newCredits: updated });
-      alert("Registro de crédito eliminado.");
+      fetch(API_URL + `/api/credits/${id}`, {
+        method: "DELETE"
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Error al eliminar el crédito del servidor.");
+          }
+          return res.json();
+        })
+        .then(() => {
+          alert("Registro de crédito eliminado.");
+          
+          // Disparar sincronización inmediata
+          fetchServerDB().then(serverData => {
+            if (serverData && serverData.catalog) {
+              reloadDataFromDB(serverData);
+            }
+          });
+        })
+        .catch((err) => {
+          console.error("Error al eliminar crédito:", err);
+          alert(err.message || "Error al conectar con el servidor.");
+        });
     }
   };
 
@@ -2078,18 +2047,64 @@ export default function App() {
       date: currentTimestamp
     };
 
-    updateLocalDB({ newLedger: [...ledger, newTx] });
+    const token = localStorage.getItem("tunkitek_token");
+    fetch(API_URL + "/api/ledger", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(newTx)
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("Error al registrar el gasto en el servidor.");
+        }
+        return res.json();
+      })
+      .then(() => {
+        alert(`Gasto "${desc}" por ${currency}${amt} registrado en caja.`);
+        setExpenseDesc("");
+        setExpenseAmount("");
 
-    setExpenseDesc("");
-    setExpenseAmount("");
-    alert(`Gasto "${desc}" por ${currency}${amt} registrado en caja.`);
+        // Sincronización inmediata
+        fetchServerDB().then(serverData => {
+          if (serverData && serverData.catalog) {
+            reloadDataFromDB(serverData);
+          }
+        });
+      })
+      .catch((err) => {
+        alert(err.message || "Error al conectar con el servidor.");
+      });
   };
 
   const handleDeleteLedgerTx = (id) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar esta transacción del historial de caja?")) {
-      const updatedLedger = ledger.filter(tx => tx.id !== id);
-      updateLocalDB({ newLedger: updatedLedger });
-      alert("Transacción eliminada.");
+      const token = localStorage.getItem("tunkitek_token");
+      fetch(API_URL + `/api/ledger/${id}`, {
+        method: "DELETE",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      })
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error("Error al eliminar la transacción en el servidor.");
+          }
+          return res.json();
+        })
+        .then(() => {
+          alert("Transacción eliminada con éxito.");
+
+          // Sincronización inmediata
+          fetchServerDB().then(serverData => {
+            if (serverData && serverData.catalog) {
+              reloadDataFromDB(serverData);
+            }
+          });
+        })
+        .catch((err) => {
+          alert(err.message || "Error al conectar con el servidor.");
+        });
     }
   };
 
