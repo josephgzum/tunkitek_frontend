@@ -2261,40 +2261,71 @@ export default function App() {
   };
 
   const handleScanSuccess = (decodedText) => {
-    const cleanedText = decodedText.trim();
-    if (!cleanedText) return;
+    const rawText = decodedText.trim();
+    if (!rawText) return;
 
-    const upperText = cleanedText.toUpperCase();
+    // Limpiar prefijos de etiquetas habituales si el código escaneado los incluyó
+    let cleanedText = rawText.toUpperCase();
+    cleanedText = cleanedText.replace(/^(MAC\s*ID:|N[°O]\s*MAC:|MAC:|GPON\s*SN:|GPON\s*S\/N:|S\/N:|SN:)/i, "").trim();
 
-    // 1. Validaciones inteligentes de patrón para evitar escaneos erróneos de MAC/SN
+    // Helper para verificar si un string limpio cumple formato MAC (12 caracteres hex)
+    const isMacFormat = (text) => {
+      const clean = text.replace(/[:-]/g, "");
+      if (!/^[0-9A-F]{12}$/.test(clean)) return false;
+      // Evitar falsos positivos con los SNs codificados en hex de ZTE (5A544547...), Huawei (48575443...) y ATW (41434847...)
+      if (clean.startsWith("48575443") || clean.startsWith("5A544547") || clean.startsWith("41434847")) return false;
+      return true;
+    };
+
+    // Helper para verificar si cumple formatos típicos de SN de ONUs
+    const isSnFormat = (text) => {
+      // Prefijos alfanuméricos conocidos: ZTE..., HWTC..., ASKY..., ALCL... (Nokia), FHTT... (Fiberhome), MSTC... (MitraStar)
+      if (/^(ZTE|HWTC|ASKY|ALCL|FHTT|MSTC)/i.test(text)) return true;
+      // Prefijos codificados en hex (ZTEG = 5A544547, HWTC = 48575443, ACHG = 41434847)
+      if (text.startsWith("48575443") || text.startsWith("5A544547") || text.startsWith("41434847")) return true;
+      // Lógica de descarte: si tiene entre 8 y 20 caracteres y contiene letras no hexadecimales (G-Z)
+      if (text.length >= 8 && text.length <= 20) {
+        if (/[G-Z]/i.test(text)) return true;
+        // Números de serie de Huawei/ZTE/ATW que son 100% hex y de exactamente 16 caracteres
+        if (text.length === 16 && /^[0-9A-F]{16}$/.test(text)) return true;
+      }
+      return false;
+    };
+
+    // 1. Validaciones cruzadas inteligentes para evitar guardar una MAC en SN o viceversa
     if (scannerTarget.includes("mac")) {
-      const macClean = upperText.replace(/[:-]/g, "");
-      const isHex = /^[0-9A-F]{12}$/.test(macClean);
-      if (!isHex || (upperText.length !== 12 && upperText.length !== 17)) {
-        alert(`⚠️ Lectura incorrecta para MAC: "${cleanedText}" no es una dirección MAC válida (debe tener 12 dígitos hexadecimales A-F, 0-9).`);
-        // Reiniciar escáner forzando re-montaje para que intente de nuevo inmediatamente
+      // Si escaneó un SN en el campo MAC
+      if (isSnFormat(cleanedText)) {
+        alert(`⚠️ Lectura incorrecta: Escaneaste el Número de Serie ("${rawText}") en el campo de Dirección MAC. Apunta al código de barras de la MAC.`);
+        setScannerActive(false);
+        setTimeout(() => setScannerActive(true), 150);
+        return;
+      }
+      // Validar formato de MAC válido
+      if (!isMacFormat(cleanedText)) {
+        alert(`⚠️ Dirección MAC no válida: "${rawText}" no tiene un formato válido (deben ser 12 dígitos hexadecimales A-F, 0-9).`);
         setScannerActive(false);
         setTimeout(() => setScannerActive(true), 150);
         return;
       }
     } else if (scannerTarget.includes("sn")) {
-      // Si escaneó una MAC formateada (ej. AA:BB:CC...) para el campo SN
-      if (cleanedText.includes(":") || cleanedText.includes("-")) {
-        alert(`⚠️ Lectura incorrecta para SN: "${cleanedText}" parece una dirección MAC. Por favor apunta al código del Número de Serie (SN).`);
+      // Si escaneó una dirección MAC en el campo SN
+      if (isMacFormat(cleanedText) || cleanedText.includes(":") || cleanedText.includes("-")) {
+        alert(`⚠️ Lectura incorrecta: Escaneaste la Dirección MAC ("${rawText}") en el campo del Número de Serie (SN). Apunta al código de barras del SN.`);
         setScannerActive(false);
         setTimeout(() => setScannerActive(true), 150);
         return;
       }
-      // La gran mayoría de SNs tienen un largo razonable
+      // Validar longitud mínima
       if (cleanedText.length < 6) {
-        alert(`⚠️ Lectura incorrecta: El código "${cleanedText}" es demasiado corto para ser un Número de Serie.`);
+        alert(`⚠️ Número de Serie no válido: El código "${rawText}" es demasiado corto.`);
         setScannerActive(false);
         setTimeout(() => setScannerActive(true), 150);
         return;
       }
     }
 
-    // Si pasó todas las validaciones cerramos el escáner
+    // Si pasó todas las validaciones cerramos el escáner y asignamos
     setScannerActive(false);
 
     if (scannerTarget === "salida-search") {
