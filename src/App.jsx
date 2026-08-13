@@ -168,6 +168,28 @@ export default function App() {
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [loginPortal, setLoginPortal] = useState("admin"); // "admin" o "customer"
+  const [customerCredits, setCustomerCredits] = useState([]);
+  const [customerPurchases, setCustomerPurchases] = useState([]);
+  const [purchasesSearch, setPurchasesSearch] = useState("");
+
+  const fetchCustomerData = (authToken) => {
+    const headers = { "Authorization": `Bearer ${authToken}` };
+    
+    fetch(API_URL + "/api/customers/portal/credits", { headers })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) setCustomerCredits(data);
+      })
+      .catch(e => console.error("Error loading customer credits:", e));
+
+    fetch(API_URL + "/api/customers/portal/purchases", { headers })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) setCustomerPurchases(data);
+      })
+      .catch(e => console.error("Error loading customer purchases:", e));
+  };
 
   const [activeTab, setActiveTab] = useState("dashboard");
   const [devices, setDevices] = useState([]);
@@ -256,6 +278,7 @@ export default function App() {
   const [addCustEmail, setAddCustEmail] = useState("");
   const [addCustAddress, setAddCustAddress] = useState("");
   const [addCustDocId, setAddCustDocId] = useState("");
+  const [addCustPassword, setAddCustPassword] = useState("");
 
   // Edit Customer Form States
   const [editCustName, setEditCustName] = useState("");
@@ -263,6 +286,7 @@ export default function App() {
   const [editCustEmail, setEditCustEmail] = useState("");
   const [editCustAddress, setEditCustAddress] = useState("");
   const [editCustDocId, setEditCustDocId] = useState("");
+  const [editCustPassword, setEditCustPassword] = useState("");
 
   // Vendor Management State
   const [vendors, setVendors] = useState([]);
@@ -492,7 +516,15 @@ export default function App() {
 
     const savedUser = localStorage.getItem("onu_inventory_current_user");
     if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
+      const parsed = JSON.parse(savedUser);
+      setCurrentUser(parsed);
+      if (parsed.role === "Cliente") {
+        setActiveTab("customer-summary");
+        const token = localStorage.getItem("tunkitek_token");
+        if (token) {
+          fetchCustomerData(token);
+        }
+      }
     }
 
     // Connect and sync with central LAN server (server_db.json)
@@ -527,42 +559,53 @@ export default function App() {
     e.preventDefault();
     setLoginError("");
 
-    fetch(API_URL + "/api/auth/login", {
+    const isCustomerPortal = loginPortal === "customer";
+    const endpoint = isCustomerPortal ? "/api/customers/portal/login" : "/api/auth/login";
+    const body = isCustomerPortal 
+      ? { docId: loginUsername, password: loginPassword }
+      : { username: loginUsername, password: loginPassword };
+
+    fetch(API_URL + endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: loginUsername,
-        password: loginPassword
-      })
+      body: JSON.stringify(body)
     })
       .then((res) => {
         if (!res.ok) {
-          throw new Error("Usuario o contraseña incorrectos.");
+          throw new Error(isCustomerPortal ? "Documento o contraseña incorrectos." : "Usuario o contraseña incorrectos.");
         }
         return res.json();
       })
       .then((data) => {
-        if (data.success) {
-          setCurrentUser(data.user);
-          localStorage.setItem("onu_inventory_current_user", JSON.stringify(data.user));
+        const userObj = isCustomerPortal ? data.customer : data.user;
+        const success = isCustomerPortal ? !!data.token : data.success;
+
+        if (success) {
+          setCurrentUser(userObj);
+          localStorage.setItem("onu_inventory_current_user", JSON.stringify(userObj));
           localStorage.setItem("tunkitek_token", data.token);
           setLoginUsername("");
           setLoginPassword("");
           
-          if (data.user.role === "Almacenero" && activeTab === "salida") {
-            setActiveTab("inventory");
-          } else if (data.user.role === "Encargado" && activeTab === "entrada") {
-            setActiveTab("inventory");
+          if (userObj.role === "Cliente") {
+            setActiveTab("customer-summary");
+            fetchCustomerData(data.token);
           } else {
-            setActiveTab("dashboard");
-          }
-
-          // Realizar sincronización inmediata
-          fetchServerDB().then(serverData => {
-            if (serverData && serverData.catalog) {
-              reloadDataFromDB(serverData);
+            if (userObj.role === "Almacenero" && activeTab === "salida") {
+              setActiveTab("inventory");
+            } else if (userObj.role === "Encargado" && activeTab === "entrada") {
+              setActiveTab("inventory");
+            } else {
+              setActiveTab("dashboard");
             }
-          });
+
+            // Realizar sincronización inmediata
+            fetchServerDB().then(serverData => {
+              if (serverData && serverData.catalog) {
+                reloadDataFromDB(serverData);
+              }
+            });
+          }
         } else {
           setLoginError(data.message || "Usuario o contraseña incorrectos.");
         }
@@ -689,53 +732,99 @@ export default function App() {
           </div>
 
           {!showChangePassword ? (
-            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div className="form-group">
-                <label htmlFor="login-user">Usuario</label>
-                <input
-                  id="login-user"
-                  type="text"
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
-                  placeholder="Nombre de usuario"
-                  className="form-control"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="login-pass">Contraseña</label>
-                <input
-                  id="login-pass"
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="form-control"
-                  required
-                />
-              </div>
-
-              {loginError && (
-                <p className="text-danger" style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <AlertTriangle size={14} /> {loginError}
-                </p>
-              )}
-
-              <button type="submit" className="btn btn-primary w-full" style={{ marginTop: "4px" }}>
-                Iniciar Sesión
-              </button>
-
-              <div style={{ textAlign: "center", marginTop: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Selector de Portal: Personal vs Clientes */}
+              <div style={{ display: "flex", gap: "8px", background: "rgba(255,255,255,0.03)", padding: "4px", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
                 <button
                   type="button"
-                  onClick={() => { setShowChangePassword(true); setLoginError(""); setCpError(""); setCpSuccess(""); }}
-                  style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", fontSize: "0.85rem", textDecoration: "underline" }}
+                  onClick={() => { setLoginPortal("admin"); setLoginUsername(""); setLoginPassword(""); setLoginError(""); }}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    fontSize: "0.85rem",
+                    fontWeight: "bold",
+                    flex: 1,
+                    background: loginPortal === "admin" ? "var(--color-primary)" : "transparent",
+                    color: loginPortal === "admin" ? "var(--bg-main)" : "var(--color-text)",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
                 >
-                  ¿Deseas cambiar tu contraseña?
+                  Ingreso Personal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setLoginPortal("customer"); setLoginUsername(""); setLoginPassword(""); setLoginError(""); }}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    fontSize: "0.85rem",
+                    fontWeight: "bold",
+                    flex: 1,
+                    background: loginPortal === "customer" ? "var(--color-primary)" : "transparent",
+                    color: loginPortal === "customer" ? "var(--bg-main)" : "var(--color-text)",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  Ingreso Clientes
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div className="form-group">
+                  <label htmlFor="login-user">
+                    {loginPortal === "admin" ? "Usuario" : "DNI / RUC del Cliente"}
+                  </label>
+                  <input
+                    id="login-user"
+                    type="text"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    placeholder={loginPortal === "admin" ? "Nombre de usuario" : "Número de documento"}
+                    className="form-control"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="login-pass">Contraseña</label>
+                  <input
+                    id="login-pass"
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="form-control"
+                    required
+                  />
+                </div>
+
+                {loginError && (
+                  <p className="text-danger" style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <AlertTriangle size={14} /> {loginError}
+                  </p>
+                )}
+
+                <button type="submit" className="btn btn-primary w-full" style={{ marginTop: "4px" }}>
+                  Iniciar Sesión
+                </button>
+
+                {loginPortal === "admin" && (
+                  <div style={{ textAlign: "center", marginTop: "8px" }}>
+                    <button
+                      type="button"
+                      onClick={() => { setShowChangePassword(true); setLoginError(""); setCpError(""); setCpSuccess(""); }}
+                      style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", fontSize: "0.85rem", textDecoration: "underline" }}
+                    >
+                      ¿Deseas cambiar tu contraseña?
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
           ) : (
             <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div className="form-group">
@@ -864,6 +953,8 @@ export default function App() {
   // Logout handler
   const handleLogout = () => {
     setCurrentUser(null);
+    setCustomerCredits([]);
+    setCustomerPurchases([]);
     localStorage.removeItem("onu_inventory_current_user");
     localStorage.removeItem("tunkitek_token");
     setActiveTab("dashboard");
@@ -1269,6 +1360,7 @@ export default function App() {
       email: addCustEmail.trim(),
       address: addCustAddress.trim(),
       docId: cleanDoc,
+      password: addCustPassword.trim(),
       dateAdded: getFormattedDateTime()
     };
 
@@ -1286,6 +1378,7 @@ export default function App() {
     setAddCustEmail("");
     setAddCustAddress("");
     setAddCustDocId("");
+    setAddCustPassword("");
     alert(`Cliente "${name}" registrado correctamente.`);
   };
 
@@ -1295,6 +1388,7 @@ export default function App() {
     setEditCustEmail(cust.email || "");
     setEditCustAddress(cust.address || "");
     setEditCustDocId(cust.docId || "");
+    setEditCustPassword("");
     setSelectedCustomer(cust);
     setIsEditingCustomer(true);
   };
@@ -1326,7 +1420,8 @@ export default function App() {
       phone: editCustPhone.trim(),
       email: editCustEmail.trim(),
       address: editCustAddress.trim(),
-      docId: cleanDoc
+      docId: cleanDoc,
+      password: editCustPassword.trim()
     };
 
     const updatedList = customers.map(c => c.id === selectedCustomer.id ? updatedCust : c);
@@ -1340,6 +1435,7 @@ export default function App() {
 
     setSelectedCustomer(null);
     setIsEditingCustomer(false);
+    setEditCustPassword("");
     alert("Datos del cliente actualizados correctamente.");
   };
 
@@ -2461,108 +2557,136 @@ export default function App() {
           <span>{appName}</span>
         </div>
         <nav className="sidebar-nav">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`sidebar-nav-item ${activeTab === "dashboard" ? "active" : ""}`}
-          >
-            <LayoutDashboard size={20} />
-            Dashboard
-          </button>
-          
-          <button
-            onClick={() => setActiveTab("catalog")}
-            className={`sidebar-nav-item ${activeTab === "catalog" ? "active" : ""}`}
-          >
-            <Bookmark size={20} />
-            Catálogo
-          </button>
+          {currentUser.role === "Cliente" ? (
+            <>
+              <button
+                onClick={() => setActiveTab("customer-summary")}
+                className={`sidebar-nav-item ${activeTab === "customer-summary" ? "active" : ""}`}
+              >
+                <LayoutDashboard size={20} />
+                Mi Resumen
+              </button>
+              <button
+                onClick={() => setActiveTab("customer-purchases")}
+                className={`sidebar-nav-item ${activeTab === "customer-purchases" ? "active" : ""}`}
+              >
+                <Package size={20} />
+                Mis Equipos
+              </button>
+              <button
+                onClick={() => setActiveTab("customer-credits")}
+                className={`sidebar-nav-item ${activeTab === "customer-credits" ? "active" : ""}`}
+              >
+                <CreditCard size={20} />
+                Mis Cuentas
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setActiveTab("dashboard")}
+                className={`sidebar-nav-item ${activeTab === "dashboard" ? "active" : ""}`}
+              >
+                <LayoutDashboard size={20} />
+                Dashboard
+              </button>
+              
+              <button
+                onClick={() => setActiveTab("catalog")}
+                className={`sidebar-nav-item ${activeTab === "catalog" ? "active" : ""}`}
+              >
+                <Bookmark size={20} />
+                Catálogo
+              </button>
 
-          <button
-            onClick={() => setActiveTab("inventory")}
-            className={`sidebar-nav-item ${activeTab === "inventory" ? "active" : ""}`}
-          >
-            <Package size={20} />
-            Ver Inventario
-          </button>
+              <button
+                onClick={() => setActiveTab("inventory")}
+                className={`sidebar-nav-item ${activeTab === "inventory" ? "active" : ""}`}
+              >
+                <Package size={20} />
+                Ver Inventario
+              </button>
 
-          {!isAlmacenero && (
-            <button
-              onClick={() => setActiveTab("customers")}
-              className={`sidebar-nav-item ${activeTab === "customers" ? "active" : ""}`}
-            >
-              <Users size={20} />
-              Clientes
-            </button>
-          )}
+              {!isAlmacenero && (
+                <button
+                  onClick={() => setActiveTab("customers")}
+                  className={`sidebar-nav-item ${activeTab === "customers" ? "active" : ""}`}
+                >
+                  <Users size={20} />
+                  Clientes
+                </button>
+              )}
 
-          {!isAlmacenero && (
-            <button
-              onClick={() => setActiveTab("vendors")}
-              className={`sidebar-nav-item ${activeTab === "vendors" ? "active" : ""}`}
-            >
-              <Truck size={20} />
-              Proveedores
-            </button>
-          )}
+              {!isAlmacenero && (
+                <button
+                  onClick={() => setActiveTab("vendors")}
+                  className={`sidebar-nav-item ${activeTab === "vendors" ? "active" : ""}`}
+                >
+                  <Truck size={20} />
+                  Proveedores
+                </button>
+              )}
 
-          {!isEncargado && (
-            <button
-              onClick={() => setActiveTab("entrada")}
-              className={`sidebar-nav-item ${activeTab === "entrada" ? "active" : ""}`}
-            >
-              <PlusCircle size={20} />
-              Entrada (Compra)
-            </button>
-          )}
+              {!isEncargado && (
+                <button
+                  onClick={() => setActiveTab("entrada")}
+                  className={`sidebar-nav-item ${activeTab === "entrada" ? "active" : ""}`}
+                >
+                  <PlusCircle size={20} />
+                  Entrada (Compra)
+                </button>
+              )}
 
-          {!isAlmacenero && (
-            <button
-              onClick={() => setActiveTab("salida")}
-              className={`sidebar-nav-item ${activeTab === "salida" ? "active" : ""}`}
-            >
-              <MinusCircle size={20} />
-              Salida (Venta)
-            </button>
-          )}
+              {!isAlmacenero && (
+                <button
+                  onClick={() => setActiveTab("salida")}
+                  className={`sidebar-nav-item ${activeTab === "salida" ? "active" : ""}`}
+                >
+                  <MinusCircle size={20} />
+                  Salida (Venta)
+                </button>
+              )}
 
-          {!isAlmacenero && (
-            <button
-              onClick={() => setActiveTab("credits")}
-              className={`sidebar-nav-item ${activeTab === "credits" ? "active" : ""}`}
-            >
-              <CreditCard size={20} />
-              Créditos / Cuentas
-            </button>
-          )}
+              {!isAlmacenero && (
+                <button
+                  onClick={() => setActiveTab("credits")}
+                  className={`sidebar-nav-item ${activeTab === "credits" ? "active" : ""}`}
+                >
+                  <CreditCard size={20} />
+                  Créditos / Cuentas
+                </button>
+              )}
 
-          {isAdmin && (
-            <button
-              onClick={() => setActiveTab("finance")}
-              className={`sidebar-nav-item ${activeTab === "finance" ? "active" : ""}`}
-            >
-              <Briefcase size={20} />
-              Caja / Finanzas
-            </button>
-          )}
+              {isAdmin && (
+                <button
+                  onClick={() => setActiveTab("finance")}
+                  className={`sidebar-nav-item ${activeTab === "finance" ? "active" : ""}`}
+                >
+                  <Briefcase size={20} />
+                  Caja / Finanzas
+                </button>
+              )}
 
-          {isAdmin && (
-            <button
-              onClick={() => setActiveTab("users")}
-              className={`sidebar-nav-item ${activeTab === "users" ? "active" : ""}`}
-            >
-              <UserPlus size={20} />
-              Usuarios
-            </button>
-          )}
+              {isAdmin && (
+                <button
+                  onClick={() => setActiveTab("users")}
+                  className={`sidebar-nav-item ${activeTab === "users" ? "active" : ""}`}
+                >
+                  <UserPlus size={20} />
+                  Usuarios
+                </button>
+              )}
 
-          {isAdmin && (
-            <button
-              onClick={() => setActiveTab("ajustes")}
-              className={`sidebar-nav-item ${activeTab === "ajustes" ? "active" : ""}`}
-            >
-              <Settings size={20} />
-              Configuración
-            </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setActiveTab("ajustes")}
+                  className={`sidebar-nav-item ${activeTab === "ajustes" ? "active" : ""}`}
+                >
+                  <Settings size={20} />
+                  Configuración
+                </button>
+              )}
+            </>
           )}
         </nav>
 
@@ -2583,53 +2707,81 @@ export default function App() {
 
       {/* BOTTOM NAV FOR MOBILE */}
       <nav className="bottom-nav">
-        <button
-          onClick={() => { setActiveTab("dashboard"); setMobileMenuOpen(false); }}
-          className={`nav-item ${activeTab === "dashboard" ? "active" : ""}`}
-        >
-          <LayoutDashboard size={20} />
-          Panel
-        </button>
-        <button
-          onClick={() => { setActiveTab("catalog"); setMobileMenuOpen(false); }}
-          className={`nav-item ${activeTab === "catalog" ? "active" : ""}`}
-        >
-          <Bookmark size={20} />
-          Catálogo
-        </button>
-        <button
-          onClick={() => { setActiveTab("inventory"); setMobileMenuOpen(false); }}
-          className={`nav-item ${activeTab === "inventory" ? "active" : ""}`}
-        >
-          <Package size={20} />
-          Stock
-        </button>
-
-        {isAlmacenero ? (
-          <button
-            onClick={() => { setActiveTab("entrada"); setMobileMenuOpen(false); }}
-            className={`nav-item ${activeTab === "entrada" ? "active" : ""}`}
-          >
-            <PlusCircle size={20} />
-            Compra
-          </button>
+        {currentUser.role === "Cliente" ? (
+          <>
+            <button
+              onClick={() => { setActiveTab("customer-summary"); setMobileMenuOpen(false); }}
+              className={`nav-item ${activeTab === "customer-summary" ? "active" : ""}`}
+            >
+              <LayoutDashboard size={20} />
+              Resumen
+            </button>
+            <button
+              onClick={() => { setActiveTab("customer-purchases"); setMobileMenuOpen(false); }}
+              className={`nav-item ${activeTab === "customer-purchases" ? "active" : ""}`}
+            >
+              <Package size={20} />
+              Mis Equipos
+            </button>
+            <button
+              onClick={() => { setActiveTab("customer-credits"); setMobileMenuOpen(false); }}
+              className={`nav-item ${activeTab === "customer-credits" ? "active" : ""}`}
+            >
+              <CreditCard size={20} />
+              Mis Cuentas
+            </button>
+          </>
         ) : (
-          <button
-            onClick={() => { setActiveTab("salida"); setMobileMenuOpen(false); }}
-            className={`nav-item ${activeTab === "salida" ? "active" : ""}`}
-          >
-            <MinusCircle size={20} />
-            Venta
-          </button>
-        )}
+          <>
+            <button
+              onClick={() => { setActiveTab("dashboard"); setMobileMenuOpen(false); }}
+              className={`nav-item ${activeTab === "dashboard" ? "active" : ""}`}
+            >
+              <LayoutDashboard size={20} />
+              Panel
+            </button>
+            <button
+              onClick={() => { setActiveTab("catalog"); setMobileMenuOpen(false); }}
+              className={`nav-item ${activeTab === "catalog" ? "active" : ""}`}
+            >
+              <Bookmark size={20} />
+              Catálogo
+            </button>
+            <button
+              onClick={() => { setActiveTab("inventory"); setMobileMenuOpen(false); }}
+              className={`nav-item ${activeTab === "inventory" ? "active" : ""}`}
+            >
+              <Package size={20} />
+              Stock
+            </button>
 
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className={`nav-item ${mobileMenuOpen ? "active" : ""}`}
-        >
-          <Menu size={20} />
-          Menú
-        </button>
+            {isAlmacenero ? (
+              <button
+                onClick={() => { setActiveTab("entrada"); setMobileMenuOpen(false); }}
+                className={`nav-item ${activeTab === "entrada" ? "active" : ""}`}
+              >
+                <PlusCircle size={20} />
+                Compra
+              </button>
+            ) : (
+              <button
+                onClick={() => { setActiveTab("salida"); setMobileMenuOpen(false); }}
+                className={`nav-item ${activeTab === "salida" ? "active" : ""}`}
+              >
+                <MinusCircle size={20} />
+                Venta
+              </button>
+            )}
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`nav-item ${mobileMenuOpen ? "active" : ""}`}
+            >
+              <Menu size={20} />
+              Menú
+            </button>
+          </>
+        )}
       </nav>
 
       {/* MAIN CONTENT AREA */}
@@ -2648,6 +2800,225 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        {/* CUSTOMER PORTAL TAB: SUMMARY */}
+        {activeTab === "customer-summary" && (
+          <div>
+            <div className="view-title-container">
+              <div>
+                <h1 className="view-title">Portal de Clientes</h1>
+                <p className="view-subtitle">Bienvenido(a), <strong>{currentUser.name}</strong>. Rápido resumen de tus finanzas y compras.</p>
+              </div>
+            </div>
+
+            {/* Customer stats cards grid */}
+            <div className="stats-grid">
+              <div className="stat-card glass">
+                <div className="stat-header">
+                  <span>DEUDA TOTAL PENDIENTE</span>
+                  <DollarSign size={16} />
+                </div>
+                <div className="stat-value text-danger">
+                  {currency}
+                  {customerCredits
+                    .filter(c => c.status === "Pendiente")
+                    .reduce((sum, c) => sum + parseFloat(c.balance || 0), 0)
+                    .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="stat-footer text-muted">Monto total por pagar</div>
+              </div>
+
+              <div className="stat-card glass">
+                <div className="stat-header">
+                  <span>TOTAL ABONADO</span>
+                  <TrendingUp size={16} />
+                </div>
+                <div className="stat-value text-success">
+                  {currency}
+                  {customerCredits
+                    .reduce((sum, c) => sum + parseFloat(c.paidAmount || 0), 0)
+                    .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <div className="stat-footer text-muted">Suma de todos tus abonos</div>
+              </div>
+
+              <div className="stat-card glass">
+                <div className="stat-header">
+                  <span>EQUIPOS ADQUIRIDOS</span>
+                  <Package size={16} />
+                </div>
+                <div className="stat-value text-primary">{customerPurchases.length}</div>
+                <div className="stat-footer text-muted">Equipos registrados a tu nombre</div>
+              </div>
+            </div>
+
+            {/* Quick action info banner */}
+            <div className="glass" style={{ padding: "20px", borderRadius: "12px", marginTop: "24px", border: "1px solid var(--border-color)", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-primary)" }}>
+                <Info size={20} /> Información del Portal
+              </h3>
+              <p style={{ fontSize: "0.9rem", color: "var(--color-text)", lineHeight: "1.5" }}>
+                Desde este portal puedes realizar consultas en tiempo real sobre tus equipos adquiridos (ONUs, Routers, etc.) y revisar los estados de tus cuentas por pagar. Para registrar nuevos abonos, comunícate directamente con el administrador para coordinar el método de pago y que lo registre en la plataforma.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* CUSTOMER PORTAL TAB: PURCHASES */}
+        {activeTab === "customer-purchases" && (
+          <div>
+            <div className="view-title-container">
+              <div>
+                <h1 className="view-title">Mis Equipos Adquiridos</h1>
+                <p className="view-subtitle">Lista de equipos ONUs/ONTs comprados y registrados.</p>
+              </div>
+            </div>
+
+            {/* Search filter for purchases */}
+            <div className="search-bar-container glass" style={{ marginBottom: "20px", padding: "12px 16px", borderRadius: "8px" }}>
+              <Search size={18} className="text-muted" style={{ marginRight: "10px" }} />
+              <input
+                type="text"
+                placeholder="Buscar por Marca, Modelo, SN o MAC..."
+                value={purchasesSearch}
+                onChange={(e) => setPurchasesSearch(e.target.value)}
+                style={{ background: "none", border: "none", color: "#fff", outline: "none", width: "100%" }}
+              />
+            </div>
+
+            {customerPurchases.filter(item => {
+              const term = purchasesSearch.toLowerCase();
+              return (
+                item.brand.toLowerCase().includes(term) ||
+                item.model.toLowerCase().includes(term) ||
+                item.sn.toLowerCase().includes(term) ||
+                (item.mac && item.mac.toLowerCase().includes(term))
+              );
+            }).length === 0 ? (
+              <div className="glass text-center" style={{ padding: "40px 20px", borderRadius: "12px" }}>
+                <Package size={48} className="text-muted" style={{ marginBottom: "16px" }} />
+                <p>No se encontraron equipos registrados a tu nombre.</p>
+              </div>
+            ) : (
+              <div className="multiple-entries" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px", height: "auto", overflowY: "visible" }}>
+                {customerPurchases
+                  .filter(item => {
+                    const term = purchasesSearch.toLowerCase();
+                    return (
+                      item.brand.toLowerCase().includes(term) ||
+                      item.model.toLowerCase().includes(term) ||
+                      item.sn.toLowerCase().includes(term) ||
+                      (item.mac && item.mac.toLowerCase().includes(term))
+                    );
+                  })
+                  .map(item => (
+                    <div key={item.id} className="lot-card glass" style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px", border: "1px solid var(--border-color)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "var(--color-primary)" }}>{item.brand}</span>
+                        <span className="badge badge-primary">{item.type || "ONU"}</span>
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <span>Modelo: <strong style={{ color: "#fff" }}>{item.model}</strong></span>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "10px" }}>
+                          <span>S/N: <strong style={{ color: "#fff" }}>{item.sn}</strong></span>
+                          {item.mac && <span>MAC: <strong style={{ color: "#fff" }}>{item.mac}</strong></span>}
+                        </div>
+                        {item.barcode && <span>Código de barras: <strong style={{ color: "#fff" }}>{item.barcode}</strong></span>}
+                      </div>
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "10px", marginTop: "auto", display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
+                        <span>Fecha: <strong>{formatShortDate(item.date)}</strong></span>
+                        <span>Precio: <strong style={{ color: "var(--color-success)" }}>{currency}{parseFloat(item.soldPrice || 0).toFixed(2)}</strong></span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* CUSTOMER PORTAL TAB: CREDITS */}
+        {activeTab === "customer-credits" && (
+          <div>
+            <div className="view-title-container">
+              <div>
+                <h1 className="view-title">Mis Estados de Cuenta</h1>
+                <p className="view-subtitle">Consulta tus saldos por pagar y el historial de abonos realizados.</p>
+              </div>
+            </div>
+
+            {customerCredits.length === 0 ? (
+              <div className="glass text-center" style={{ padding: "40px 20px", borderRadius: "12px" }}>
+                <CreditCard size={48} className="text-muted" style={{ marginBottom: "16px" }} />
+                <p>No tienes cuentas de crédito pendientes de cobro.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {customerCredits.map(cred => {
+                  const isPendiente = cred.status === "Pendiente";
+                  return (
+                    <div key={cred.id} className="lot-card glass" style={{ border: "1px solid var(--border-color)", padding: "20px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "12px", marginBottom: "12px" }}>
+                        <div>
+                          <span className={`badge ${isPendiente ? "badge-danger" : "badge-success"}`} style={{ marginBottom: "6px" }}>
+                            {cred.status}
+                          </span>
+                          <h3 style={{ fontSize: "1.1rem", fontWeight: "bold", margin: 0 }}>{cred.description}</h3>
+                          <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>Registrado: {formatShortDate(cred.date)}</span>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>Saldo Pendiente</span>
+                          <h2 style={{ fontSize: "1.4rem", fontWeight: "800", color: isPendiente ? "var(--color-danger)" : "var(--color-success)", margin: 0 }}>
+                            {currency}{parseFloat(cred.balance || 0).toFixed(2)}
+                          </h2>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", fontSize: "0.9rem", color: "var(--color-text-muted)", marginBottom: "16px" }}>
+                        <span>Total de Compra: <strong style={{ color: "#fff" }}>{currency}{parseFloat(cred.totalAmount || 0).toFixed(2)}</strong></span>
+                        <span>Total Abonado: <strong style={{ color: "var(--color-success)" }}>{currency}{parseFloat(cred.paidAmount || 0).toFixed(2)}</strong></span>
+                      </div>
+
+                      {/* List of payments inside this credit */}
+                      <div style={{ background: "rgba(0,0,0,0.18)", padding: "12px", borderRadius: "8px" }}>
+                        <h4 style={{ fontSize: "0.85rem", fontWeight: "bold", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--color-primary)" }}>
+                          Historial de Abonos
+                        </h4>
+                        {cred.payments && cred.payments.length > 0 ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {cred.payments.map((pay, pIdx) => (
+                              <div key={pay.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem", background: "rgba(255,255,255,0.02)", padding: "8px 10px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.04)" }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                  <span style={{ fontWeight: "bold" }}>Abono #{pIdx + 1} - {pay.paymentMethod || "Efectivo"}</span>
+                                  <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)" }}>{formatShortDate(pay.date)} - {pay.notes || "Sin observaciones"}</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                  <strong style={{ color: "var(--color-success)" }}>+{currency}{parseFloat(pay.amount).toFixed(2)}</strong>
+                                  {pay.receiptUrl && (
+                                    <a
+                                      href={`${API_URL}${pay.receiptUrl}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="btn btn-secondary btn-sm"
+                                      style={{ padding: "4px 8px", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}
+                                    >
+                                      <Paperclip size={12} /> Recibo
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", margin: 0 }}>No hay abonos registrados para esta cuenta.</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* DASHBOARD TAB */}
         {activeTab === "dashboard" && (
@@ -3473,15 +3844,27 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label>Dirección / Ubicación</label>
-                    <input
-                      type="text"
-                      placeholder="Av. Los Pinos 456, Lima"
-                      value={addCustAddress}
-                      onChange={(e) => setAddCustAddress(e.target.value)}
-                      className="form-control"
-                    />
+                  <div className="form-row">
+                    <div className="form-group" style={{ flex: 2 }}>
+                      <label>Dirección / Ubicación</label>
+                      <input
+                        type="text"
+                        placeholder="Av. Los Pinos 456, Lima"
+                        value={addCustAddress}
+                        onChange={(e) => setAddCustAddress(e.target.value)}
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="form-group" style={{ flex: 1 }}>
+                      <label>Contraseña del Portal</label>
+                      <input
+                        type="password"
+                        placeholder="Definir contraseña"
+                        value={addCustPassword}
+                        onChange={(e) => setAddCustPassword(e.target.value)}
+                        className="form-control"
+                      />
+                    </div>
                   </div>
 
                   <button type="submit" className="btn btn-primary w-full" style={{ marginTop: "10px" }}>
@@ -5715,14 +6098,26 @@ export default function App() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Dirección</label>
-                  <input
-                    type="text"
-                    value={editCustAddress}
-                    onChange={(e) => setEditCustAddress(e.target.value)}
-                    className="form-control"
-                  />
+                <div className="form-row">
+                  <div className="form-group" style={{ flex: 2 }}>
+                    <label>Dirección</label>
+                    <input
+                      type="text"
+                      value={editCustAddress}
+                      onChange={(e) => setEditCustAddress(e.target.value)}
+                      className="form-control"
+                    />
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Nueva Contraseña (Opcional)</label>
+                    <input
+                      type="password"
+                      placeholder="Dejar en blanco para mantener"
+                      value={editCustPassword}
+                      onChange={(e) => setEditCustPassword(e.target.value)}
+                      className="form-control"
+                    />
+                  </div>
                 </div>
               </div>
 
