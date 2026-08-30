@@ -230,6 +230,22 @@ export default function App() {
   const [procInitialPayment, setProcInitialPayment] = useState("0.00");
   const [procSerialAssignments, setProcSerialAssignments] = useState({}); // { [productId]: [deviceIds...] }
 
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [devices, setDevices] = useState([]);
+  const [lots, setLots] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [currency, setCurrency] = useState("$");
+  const [catalog, setCatalog] = useState([]);
+  const [ledger, setLedger] = useState([]);
+  const [nonSerialized, setNonSerialized] = useState([]);
+
+  // System Branding State
+  const [appName, setAppName] = useState("TUNKITEK");
+  const [appSubtitle, setAppSubtitle] = useState("Gestión de Almacén e Inventario");
+  const [appLogo, setAppLogo] = useState("/logo-tunqui-red.png");
+  const [bgTheme, setBgTheme] = useState("cyber-dark");
+
   useEffect(() => {
     const adminToken = localStorage.getItem("tunkitek_token");
     if (!adminToken) return;
@@ -253,22 +269,6 @@ export default function App() {
         .catch(e => console.error("Error loading pre-registrations:", e));
     }
   }, [activeTab]);
-
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [devices, setDevices] = useState([]);
-  const [lots, setLots] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [currency, setCurrency] = useState("$");
-  const [catalog, setCatalog] = useState([]);
-  const [ledger, setLedger] = useState([]);
-  const [nonSerialized, setNonSerialized] = useState([]);
-
-  // System Branding State
-  const [appName, setAppName] = useState("TUNKITEK");
-  const [appSubtitle, setAppSubtitle] = useState("Gestión de Almacén e Inventario");
-  const [appLogo, setAppLogo] = useState("/logo-tunqui-red.png");
-  const [bgTheme, setBgTheme] = useState("cyber-dark");
 
   // Settings Form State
   const [editAppName, setEditAppName] = useState("TUNKITEK");
