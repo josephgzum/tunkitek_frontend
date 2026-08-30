@@ -19,11 +19,29 @@ import {
   ChevronRight,
   Star,
   Info,
-  ArrowLeft
+  ArrowLeft,
+  AlertTriangle,
+  LayoutDashboard,
+  CreditCard,
+  Package,
+  LogOut,
+  Paperclip
 } from 'lucide-react';
 
-export default function PublicStoreView({ API_URL, currentUser, currency, onRequireLogin, onBackToLogin, hideHeader }) {
-  const [activeSubTab, setActiveSubTab] = useState("store"); // "store" | "register" | "cart"
+export default function PublicStoreView({ 
+  API_URL, 
+  currentUser, 
+  currency, 
+  customerCredits = [], 
+  customerPurchases = [], 
+  customerOrders = [],
+  devices = [],
+  onLoginSuccess,
+  onLogout
+}) {
+  const [activeSubTab, setActiveSubTab] = useState("store"); // "store" | "register" | "cart" | "login-customer" | "login-staff" | "account"
+  const [accountSection, setAccountSection] = useState("summary"); // "summary" | "purchases" | "credits" | "orders"
+  
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,6 +63,15 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [regSuccess, setRegSuccess] = useState("");
   const [regError, setRegError] = useState("");
+
+  // Login Form states
+  const [loginUser, setLoginUser] = useState("");
+  const [loginPass, setLoginPass] = useState("");
+  const [loginErr, setLoginErr] = useState("");
+  const [loginLoad, setLoginLoad] = useState(false);
+
+  // Customer purchase search state
+  const [purchaseSearch, setPurchaseSearch] = useState("");
 
   const isClient = currentUser?.role === "Cliente";
   const token = localStorage.getItem("tunkitek_token");
@@ -69,6 +96,49 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
   useEffect(() => {
     loadCatalog();
   }, [isClient, token]);
+
+  // Handle Login (Customer or Staff)
+  const executeLogin = (e, type) => {
+    e.preventDefault();
+    setLoginErr("");
+    setLoginLoad(true);
+
+    const isCustomer = type === "customer";
+    const endpoint = isCustomer ? "/api/customers/portal/login" : "/api/auth/login";
+    
+    // Body layout: customer uses docId, staff uses username
+    const payload = isCustomer 
+      ? { docId: loginUser.trim(), password: loginPass }
+      : { username: loginUser.trim(), password: loginPass };
+
+    fetch(API_URL + endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          setLoginErr(data.message || "Credenciales incorrectas.");
+        } else {
+          // Success
+          setLoginUser("");
+          setLoginPass("");
+          
+          if (isCustomer) {
+            onLoginSuccess(data.customer, data.token, "customer");
+            setActiveSubTab("store");
+          } else {
+            onLoginSuccess(data.user, data.token, "admin");
+          }
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setLoginErr("Error de red al conectar con el servidor.");
+      })
+      .finally(() => setLoginLoad(false));
+  };
 
   // Handle registration submission
   const handleRegister = (e) => {
@@ -164,7 +234,7 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
   const checkoutOrder = () => {
     if (!isClient) {
       alert("Debes iniciar sesión como cliente para enviar un pedido.");
-      onRequireLogin();
+      setActiveSubTab("login-customer");
       return;
     }
 
@@ -222,14 +292,55 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = cart.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
 
+  // Formatter helpers
+  const formatShortDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const parts = dateStr.split("T")[0].split("-");
+    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    return dateStr;
+  };
+
+  // Filter purchases list
+  const filteredPurchases = customerPurchases.filter(d => {
+    const term = purchaseSearch.toLowerCase();
+    return (
+      d.brand.toLowerCase().includes(term) ||
+      d.model.toLowerCase().includes(term) ||
+      d.sn.toLowerCase().includes(term) ||
+      (d.notes && d.notes.toLowerCase().includes(term))
+    );
+  });
+
   return (
     <div className="store-wrapper">
       
-      {/* 1. TOP RED BANNER (SEGO-inspired) */}
+      {/* 1. TOP RED BANNER (Chimbote Address + Staff login link) */}
       {!hideHeader && (
         <div className="store-top-banner">
-          <span>📍 Av. Francisco Bolognesi 536, Chiclayo | 📞 319-2669</span>
-          <span style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 8px', borderRadius: '4px' }}>Sucursal Chiclayo</span>
+          <span>📍 AV. JOSÉ GÁLVEZ 557, CHIMBOTE | 📞 Tel: 923030000</span>
+          <button 
+            onClick={() => {
+              setLoginErr("");
+              setLoginUser("");
+              setLoginPass("");
+              setActiveSubTab("login-staff");
+            }}
+            style={{ 
+              background: 'rgba(0,0,0,0.3)', 
+              color: 'white', 
+              padding: '3px 10px', 
+              borderRadius: '4px', 
+              fontSize: '0.7rem', 
+              fontWeight: 'bold', 
+              border: 'none', 
+              cursor: 'pointer',
+              textTransform: 'uppercase'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.5)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.3)'}
+          >
+            🏢 Acceso Personal (Chimbote)
+          </button>
         </div>
       )}
 
@@ -237,7 +348,7 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
       {!hideHeader && (
         <header className="store-header">
           {/* Logo */}
-          <div className="store-logo" onClick={() => setActiveSubTab("store")}>
+          <div className="store-logo" onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }}>
             TUNQUI<span>TEK</span>
           </div>
 
@@ -296,9 +407,19 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
               </div>
             </button>
 
-            {/* User Account / Require Login */}
+            {/* User Account / My Account portal redirect */}
             <button 
-              onClick={isClient ? undefined : onRequireLogin}
+              onClick={() => {
+                if (isClient) {
+                  setActiveSubTab("account");
+                  setAccountSection("summary");
+                } else {
+                  setLoginErr("");
+                  setLoginUser("");
+                  setLoginPass("");
+                  setActiveSubTab("login-customer");
+                }
+              }}
               className="store-action-btn"
             >
               <div className="store-action-icon">
@@ -306,7 +427,7 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
               </div>
               <div className="hidden md:block" style={{ marginLeft: '8px' }}>
                 <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', fontWeight: 'bold' }}>{isClient ? "CLIENTE" : "INVITADO"}</span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#1e293b' }}>{isClient ? currentUser.name : "Mi Cuenta"}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#1e293b' }}>{isClient ? "Mi Cuenta" : "Iniciar Sesión"}</span>
               </div>
             </button>
           </div>
@@ -337,31 +458,19 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
                 💡 ¿Quieres ser Distribuidor? ¡Regístrate aquí!
               </button>
             )}
+            {isClient && (
+              <button 
+                style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold' }} 
+                onClick={() => { setActiveSubTab("account"); setAccountSection("summary"); }}
+              >
+                📊 Mi Panel de Distribuidor
+              </button>
+            )}
           </div>
-          
-          <button 
-            onClick={onBackToLogin}
-            style={{ 
-              background: 'none', 
-              border: '1px solid #475569', 
-              color: '#22d3ee', 
-              cursor: 'pointer', 
-              fontWeight: 'bold', 
-              padding: '6px 12px', 
-              borderRadius: '4px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '4px', 
-              fontSize: '0.75rem',
-              textTransform: 'uppercase'
-            }}
-          >
-            <ArrowLeft size={12} /> Regresar al Login
-          </button>
         </div>
       )}
 
-      {/* 4. EMBEDDED NAVIGATION (For Dashboard view) */}
+      {/* 4. EMBEDDED NAVIGATION (For Dashboard view in admin, although customers won't see it now) */}
       {hideHeader && (
         <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'between', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -413,9 +522,10 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
         </div>
       )}
 
-      {/* 5. MAIN SECTION */}
+      {/* 5. MAIN CONTENT AREA */}
       <div className="store-content-container" style={{ flex: 1 }}>
         
+        {/* TAB: STORE CATALOG */}
         {activeSubTab === "store" && (
           <>
             {/* LEFT SIDEBAR (SEGO style) */}
@@ -461,8 +571,8 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
               {/* Client activation info */}
               {isClient && (
                 <div className="store-client-banner">
-                  <span>🔑 Sesión activa: <strong style={{ color: '#064e3b' }}>{currentUser.name}</strong>. Acceso exclusivo con precios autorizados.</span>
-                  <span style={{ background: '#059669', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', uppercase: 'true' }}>Precios Visibles</span>
+                  <span>🔑 Distribuidor: <strong style={{ color: '#064e3b' }}>{currentUser.name}</strong>. Acceso exclusivo con precios autorizados.</span>
+                  <span style={{ background: '#059669', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Precios Visibles</span>
                 </div>
               )}
 
@@ -490,7 +600,7 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
 
                     return (
                       <div key={product.id} className="store-card">
-                        {/* Rating Star Badge (SEGO style) */}
+                        {/* Rating Star Badge */}
                         <div className="store-card-rating">
                           <Star size={10} fill="currentColor" /> 5.0
                         </div>
@@ -556,7 +666,12 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
                               <span className="store-card-price-lbl" style={{ display: 'block', marginBottom: '4px' }}>Ver Precio especial</span>
                               <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
                                 <button 
-                                  onClick={onRequireLogin}
+                                  onClick={() => {
+                                    setLoginErr("");
+                                    setLoginUser("");
+                                    setLoginPass("");
+                                    setActiveSubTab("login-customer");
+                                  }}
                                   className="store-card-link-red"
                                 >
                                   Iniciar sesión
@@ -582,10 +697,132 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
           </>
         )}
 
+        {/* TAB: LOGIN CUSTOMER */}
+        {activeSubTab === "login-customer" && (
+          <div className="store-form-card">
+            <div className="store-form-title">
+              <User style={{ color: '#dc2626' }} size={24} />
+              <span>Acceso de Clientes / Distribuidores</span>
+            </div>
+            <p className="store-form-subtitle">
+              Ingresa tu documento tributario (DNI o RUC) y contraseña para acceder a precios de distribuidor y enviar pedidos.
+            </p>
+
+            {loginErr && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '12px', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '16px', fontWeight: 'bold' }}>
+                {loginErr}
+              </div>
+            )}
+
+            <form onSubmit={(e) => executeLogin(e, "customer")} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="store-form-group">
+                <label className="store-form-label">RUC o DNI del Cliente *</label>
+                <div className="store-form-input-wrapper">
+                  <FileText size={16} className="store-form-icon" />
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Ej. RUC 20101010101"
+                    value={loginUser}
+                    onChange={(e) => setLoginUser(e.target.value)}
+                    className="store-form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="store-form-group">
+                <label className="store-form-label">Contraseña de Distribuidor *</label>
+                <div className="store-form-input-wrapper">
+                  <Lock size={16} className="store-form-icon" />
+                  <input 
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={loginPass}
+                    onChange={(e) => setLoginPass(e.target.value)}
+                    className="store-form-input"
+                  />
+                </div>
+              </div>
+
+              <button type="submit" disabled={loginLoad} className="store-form-btn-submit">
+                {loginLoad ? "Verificando..." : "Iniciar Sesión Cliente"}
+              </button>
+
+              <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.8rem' }}>
+                <span style={{ color: '#64748b' }}>¿Aún no eres distribuidor? </span>
+                <button 
+                  type="button"
+                  onClick={() => setActiveSubTab("register")}
+                  className="store-card-link-red animate-pulse"
+                >
+                  Regístrate aquí
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB: LOGIN STAFF */}
+        {activeSubTab === "login-staff" && (
+          <div className="store-form-card" style={{ border: '1px solid #cbd5e1' }}>
+            <div className="store-form-title">
+              <Building style={{ color: '#dc2626' }} size={24} />
+              <span>Acceso de Personal - Sucursal Chimbote</span>
+            </div>
+            <p className="store-form-subtitle">
+              Portal restringido para el personal administrativo y almaceneros de TUNKITEK.
+            </p>
+
+            {loginErr && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '12px', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '16px', fontWeight: 'bold' }}>
+                {loginErr}
+              </div>
+            )}
+
+            <form onSubmit={(e) => executeLogin(e, "admin")} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="store-form-group">
+                <label className="store-form-label">Usuario de Personal *</label>
+                <div className="store-form-input-wrapper">
+                  <User size={16} className="store-form-icon" />
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Tu nombre de usuario"
+                    value={loginUser}
+                    onChange={(e) => setLoginUser(e.target.value)}
+                    className="store-form-input"
+                  />
+                </div>
+              </div>
+
+              <div className="store-form-group">
+                <label className="store-form-label">Contraseña *</label>
+                <div className="store-form-input-wrapper">
+                  <Lock size={16} className="store-form-icon" />
+                  <input 
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={loginPass}
+                    onChange={(e) => setLoginPass(e.target.value)}
+                    className="store-form-input"
+                  />
+                </div>
+              </div>
+
+              <button type="submit" disabled={loginLoad} className="store-form-btn-submit">
+                {loginLoad ? "Ingresando..." : "Ingresar al Panel de Gestión"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* TAB: REGISTER PUBLIC FORM */}
         {activeSubTab === "register" && !isClient && (
           <div className="store-form-card">
             <div className="store-form-title">
-              <UserPlus className="text-red-650" style={{ color: '#dc2626' }} size={24} />
+              <UserPlus style={{ color: '#dc2626' }} size={24} />
               <span>Solicitud de Registro de Cliente</span>
             </div>
             <p className="store-form-subtitle">
@@ -715,6 +952,7 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
           </div>
         )}
 
+        {/* TAB: SHOPPING CART */}
         {activeSubTab === "cart" && (
           <div className="store-cart-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
@@ -858,6 +1096,344 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
             )}
           </div>
         )}
+
+        {/* TAB: CLIENT INTEGRATED PORTAL (accountSection) */}
+        {activeSubTab === "account" && isClient && (
+          <>
+            {/* LEFT SIDEBAR: ACCOUNT ACTIONS */}
+            <aside className="store-sidebar">
+              <h3 className="store-sidebar-title">Mi Cuenta</h3>
+              <div className="store-sidebar-list">
+                <button 
+                  onClick={() => setAccountSection("summary")}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    background: accountSection === "summary" ? '#fee2e2' : 'none',
+                    color: accountSection === "summary" ? '#dc2626' : '#475569',
+                    fontWeight: accountSection === "summary" ? 'bold' : 'normal',
+                    border: 'none',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <LayoutDashboard size={16} />
+                  <span>Resumen General</span>
+                </button>
+
+                <button 
+                  onClick={() => setAccountSection("purchases")}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    background: accountSection === "purchases" ? '#fee2e2' : 'none',
+                    color: accountSection === "purchases" ? '#dc2626' : '#475569',
+                    fontWeight: accountSection === "purchases" ? 'bold' : 'normal',
+                    border: 'none',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <Package size={16} />
+                  <span>Equipos Adquiridos</span>
+                </button>
+
+                <button 
+                  onClick={() => setAccountSection("credits")}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    background: accountSection === "credits" ? '#fee2e2' : 'none',
+                    color: accountSection === "credits" ? '#dc2626' : '#475569',
+                    fontWeight: accountSection === "credits" ? 'bold' : 'normal',
+                    border: 'none',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <CreditCard size={16} />
+                  <span>Mis Deudas y Pagos</span>
+                </button>
+
+                <button 
+                  onClick={() => setAccountSection("orders")}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    background: accountSection === "orders" ? '#fee2e2' : 'none',
+                    color: accountSection === "orders" ? '#dc2626' : '#475569',
+                    fontWeight: accountSection === "orders" ? 'bold' : 'normal',
+                    border: 'none',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  <ShoppingCart size={16} />
+                  <span>Mis Pedidos Tienda</span>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    if (window.confirm("¿Seguro que deseas cerrar tu sesión?")) {
+                      onLogout();
+                      setActiveSubTab("store");
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    background: 'none',
+                    color: '#ef4444',
+                    fontWeight: 'bold',
+                    border: 'none',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    marginTop: '16px',
+                    borderTop: '1px solid #f1f5f9',
+                    paddingTop: '16px'
+                  }}
+                >
+                  <LogOut size={16} />
+                  <span>Cerrar Sesión</span>
+                </button>
+              </div>
+            </aside>
+
+            {/* MAIN DATA RENDERING */}
+            <div className="store-catalog-section" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px' }}>
+              
+              {/* SUBSECTION: SUMMARY */}
+              {accountSection === "summary" && (
+                <div>
+                  <h2 className="store-catalog-title" style={{ marginBottom: '16px' }}>Resumen de Cuenta Distribuidor</h2>
+                  
+                  {/* Financial Stats Cards Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ border: '1px solid #fee2e2', padding: '16px', borderRadius: '8px', background: '#fffafb' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', fontWeight: 'bold', uppercase: 'true' }}>DEUDA PENDIENTE</span>
+                      <strong style={{ fontSize: '1.6rem', color: '#ef4444', fontFamily: 'monospace' }}>
+                        {currency}
+                        {customerCredits
+                          .filter(c => c.status === "Pendiente")
+                          .reduce((sum, c) => sum + parseFloat(c.balance || 0), 0)
+                          .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </strong>
+                    </div>
+
+                    <div style={{ border: '1px solid #d1fae5', padding: '16px', borderRadius: '8px', background: '#f6fdfa' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', fontWeight: 'bold', uppercase: 'true' }}>TOTAL ABONADO</span>
+                      <strong style={{ fontSize: '1.6rem', color: '#10b981', fontFamily: 'monospace' }}>
+                        {currency}
+                        {customerCredits
+                          .reduce((sum, c) => sum + parseFloat(c.paidAmount || 0), 0)
+                          .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <h3 className="store-sidebar-title" style={{ marginTop: '16px' }}>Información de la Cuenta</h3>
+                  <div style={{ fontSize: '0.875rem', background: '#f8fafc', padding: '16px', borderRadius: '6px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div>👤 <strong>Nombre:</strong> {currentUser.name}</div>
+                    <div>🏢 <strong>Documento:</strong> {currentUser.docId}</div>
+                    <div>📞 <strong>Teléfono:</strong> {currentUser.phone || "-"}</div>
+                    <div>✉️ <strong>Correo:</strong> {currentUser.email || "-"}</div>
+                    <div style={{ gridColumn: 'span 2' }}>📍 <strong>Dirección de Entrega:</strong> {currentUser.address || "-"}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUBSECTION: PURCHASES */}
+              {accountSection === "purchases" && (
+                <div>
+                  <h2 className="store-catalog-title">Equipos Adquiridos</h2>
+                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '16px' }}>Listado de equipos vendidos vinculados a tu cuenta.</p>
+
+                  <input 
+                    type="text"
+                    placeholder="Buscar por SN, marca o modelo..."
+                    value={purchaseSearch}
+                    onChange={(e) => setPurchaseSearch(e.target.value)}
+                    className="store-search-input"
+                    style={{ marginBottom: '16px', background: '#f8fafc', maxWidth: '350px' }}
+                  />
+
+                  {filteredPurchases.length === 0 ? (
+                    <p style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>No se encontraron equipos registrados.</p>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '16px' }}>
+                      {filteredPurchases.map(dev => (
+                        <div key={dev.id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', background: '#f8fafc' }}>
+                          <span style={{ fontSize: '0.65rem', background: '#e2e8f0', color: '#475569', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 'bold' }}>{dev.type}</span>
+                          <h4 style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#0f172a', margin: '6px 0 2px 0' }}>{dev.brand} {dev.model}</h4>
+                          <div style={{ fontSize: '0.8rem', color: '#475569', fontFamily: 'monospace', fontWeight: 'bold', marginBottom: '8px' }}>SN: {dev.sn}</div>
+                          
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', borderTop: '1px solid #cbd5e1', paddingTop: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <div>🏷️ <strong>Precio de Venta:</strong> {currency}{parseFloat(dev.soldPrice || 0).toFixed(2)}</div>
+                            <div>📅 <strong>Fecha Venta:</strong> {formatShortDate(dev.soldDate)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SUBSECTION: CREDITS DEBTS AND PAYMENTS */}
+              {accountSection === "credits" && (
+                <div>
+                  <h2 className="store-catalog-title" style={{ marginBottom: '16px' }}>Créditos y Estados de Pago</h2>
+                  
+                  {customerCredits.length === 0 ? (
+                    <p style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>No tienes deudas registradas.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {customerCredits.map(cred => {
+                        const isPendiente = cred.status === "Pendiente";
+                        return (
+                          <div key={cred.id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '20px', background: '#f8fafc' }}>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid #cbd5e1', paddingBottom: '12px', marginBottom: '12px' }}>
+                              <div>
+                                <span className={`store-card-stock-badge ${isPendiente ? "out" : "in"}`} style={{ display: 'inline-block', marginBottom: '6px' }}>{cred.status}</span>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 'bold', margin: 0 }}>{cred.description}</h4>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Registrado: {formatShortDate(cred.date)}</span>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Saldo Pendiente</span>
+                                <strong style={{ fontSize: '1.25rem', color: isPendiente ? '#ef4444' : '#10b981', fontFamily: 'monospace' }}>
+                                  {currency}{parseFloat(cred.balance || 0).toFixed(2)}
+                                </strong>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#64748b', marginBottom: '16px' }}>
+                              <span>Monto Total: <strong style={{ color: '#0f172a' }}>{currency}{parseFloat(cred.totalAmount || 0).toFixed(2)}</strong></span>
+                              <span>Total Abonado: <strong style={{ color: '#10b981' }}>{currency}{parseFloat(cred.paidAmount || 0).toFixed(2)}</strong></span>
+                            </div>
+
+                            {/* Payment history */}
+                            <div style={{ background: '#fff', border: '1px solid #cbd5e1', padding: '12px', borderRadius: '6px' }}>
+                              <h5 className="store-sidebar-title" style={{ fontSize: '0.65rem', marginBottom: '10px' }}>Historial de Abonos</h5>
+                              {cred.payments && cred.payments.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  {cred.payments.map((pay, pIdx) => (
+                                    <div key={pay.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', background: '#f8fafc', padding: '8px 10px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                                      <div>
+                                        <strong>Abono #{pIdx + 1} ({pay.paymentMethod || "Efectivo"})</strong>
+                                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block' }}>{formatShortDate(pay.date)} - {pay.notes || "Sin observaciones"}</span>
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <strong style={{ color: '#10b981' }}>+{currency}{parseFloat(pay.amount).toFixed(2)}</strong>
+                                        {pay.receiptUrl && (
+                                          <a
+                                            href={`${API_URL}${pay.receiptUrl}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ fontSize: '0.7rem', background: '#e2e8f0', color: '#475569', padding: '2px 6px', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold' }}
+                                          >
+                                            <Paperclip size={10} style={{ display: 'inline-block', marginRight: '2px' }} /> Recibo
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: 0 }}>No hay abonos registrados para esta cuenta.</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SUBSECTION: ORDERS HISTORY */}
+              {accountSection === "orders" && (
+                <div>
+                  <h2 className="store-catalog-title" style={{ marginBottom: '16px' }}>Pedidos Tienda</h2>
+                  
+                  {customerOrders.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px' }}>
+                      <p style={{ color: '#94a3b8', marginBottom: '16px' }}>No has realizado ningún pedido todavía.</p>
+                      <button 
+                        onClick={() => setActiveSubTab("store")}
+                        className="store-card-btn-order"
+                      >
+                        Ir a la Tienda
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {customerOrders.map(order => {
+                        let badgeClass = "out";
+                        if (order.status === "Entregado" || order.status === "Aprobado") badgeClass = "in";
+                        if (order.status === "Rechazado") badgeClass = "out";
+
+                        return (
+                          <div key={order.id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '20px', background: '#f8fafc' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid #cbd5e1', paddingBottom: '12px', marginBottom: '12px' }}>
+                              <div>
+                                <span className={`store-card-stock-badge ${badgeClass}`} style={{ marginBottom: '6px', display: 'inline-block' }}>{order.status}</span>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 'bold', margin: 0 }}>Pedido #{order.id}</h4>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Fecha: {order.date}</span>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Total Pedido</span>
+                                <strong style={{ fontSize: '1.25rem', color: '#10b981', fontFamily: 'monospace' }}>
+                                  {currency}{parseFloat(order.totalAmount).toFixed(2)}
+                                </strong>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <h5 className="store-sidebar-title" style={{ fontSize: '0.65rem', marginBottom: '6px' }}>Artículos</h5>
+                              {order.items.map(item => (
+                                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', background: 'white', border: '1px solid #cbd5e1', padding: '8px 12px', borderRadius: '6px' }}>
+                                  <span>{item.quantity}x {item.brand} {item.productName} ({item.productType})</span>
+                                  <strong style={{ fontFamily: 'monospace' }}>{currency}{(item.quantity * item.priceUnit).toFixed(2)}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+          </>
+        )}
+
       </div>
     </div>
   );

@@ -476,9 +476,32 @@ export default function App() {
     setCurrentUser(null);
     setCustomerCredits([]);
     setCustomerPurchases([]);
+    setCustomerOrders([]);
     localStorage.removeItem("onu_inventory_current_user");
     localStorage.removeItem("tunkitek_token");
+    setViewMode("store");
     setActiveTab("dashboard");
+  };
+
+  // Successful login callback from PublicStoreView
+  const handleLoginSuccess = (userObj, token, portal) => {
+    setCurrentUser(userObj);
+    localStorage.setItem("onu_inventory_current_user", JSON.stringify(userObj));
+    localStorage.setItem("tunkitek_token", token);
+    
+    if (portal === "admin") {
+      setViewMode("app");
+      if (userObj.role === "Almacenero") {
+        setActiveTab("inventory");
+      } else if (userObj.role === "Encargado") {
+        setActiveTab("inventory");
+      } else {
+        setActiveTab("dashboard");
+      }
+    } else {
+      setViewMode("store");
+      fetchCustomerData(token);
+    }
   };
 
   // Escuchar eventos de expiración de sesión y redirigir al login
@@ -609,12 +632,16 @@ export default function App() {
       const parsed = JSON.parse(savedUser);
       setCurrentUser(parsed);
       if (parsed.role === "Cliente") {
-        setActiveTab("customer-summary");
+        setViewMode("store");
         const token = localStorage.getItem("tunkitek_token");
         if (token) {
           fetchCustomerData(token);
         }
+      } else {
+        setViewMode("app");
       }
+    } else {
+      setViewMode("store"); // Visitantes ven la tienda por defecto
     }
 
     // Connect and sync with central LAN server (server_db.json)
@@ -829,8 +856,12 @@ export default function App() {
         API_URL={API_URL}
         currentUser={currentUser}
         currency={currency}
-        onRequireLogin={() => setViewMode("app")}
-        onBackToLogin={() => setViewMode("app")}
+        customerCredits={customerCredits}
+        customerPurchases={customerPurchases}
+        customerOrders={customerOrders}
+        devices={devices}
+        onLoginSuccess={handleLoginSuccess}
+        onLogout={handleLogout}
       />
     );
   }
