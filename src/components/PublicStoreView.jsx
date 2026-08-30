@@ -453,14 +453,7 @@ export default function PublicStoreView({
             >
               Todos los Productos
             </button>
-            {!isClient && (
-              <button 
-                style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold' }} 
-                onClick={() => setActiveSubTab("register")}
-              >
-                💡 ¿Quieres ser Distribuidor? ¡Regístrate aquí!
-              </button>
-            )}
+
             {isClient && (
               <button 
                 style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold' }} 
@@ -597,7 +590,7 @@ export default function PublicStoreView({
                     </h3>
                   </div>
                   <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.45rem', color: '#475569', fontStyle: 'italic', fontWeight: '500' }}>
-                    "En Tunkitek (Tunki Networks), tomamos nuestro nombre del ave nacional del Perú porque compartimos su esencia: nacimos para conectar ecosistemas complejos. Así como el Tunki habita en la intersección de los Andes y la Amazonía, nosotros construimos los puentes tecnológicos que unen a las empresas con su futuro. Destacamos por ofrecer una señal clara, un servicio ágil y soluciones de infraestructura robustas que se adaptan a cualquier entorno. Somos tecnología de alto rendimiento con verdadero ADN peruano."
+                    {"\"En Tunkitek (Tunki Networks), tomamos nuestro nombre del ave nacional del Perú porque compartimos su esencia: nacimos para conectar ecosistemas complejos. Así como el Tunki habita en la intersección de los Andes y la Amazonía, nosotros construimos los puentes tecnológicos que unen a las empresas con su futuro. Destacamos por ofrecer una señal clara, un servicio ágil y soluciones de infraestructura robustas que se adaptan a cualquier entorno. Somos tecnología de alto rendimiento con verdadero ADN peruano.\""}
                   </p>
                 </div>
               )}
@@ -702,13 +695,6 @@ export default function PublicStoreView({
                                 >
                                   Iniciar sesión
                                 </button>
-                                <span style={{ color: '#cbd5e1', margin: '0 8px' }}>|</span>
-                                <button 
-                                  onClick={() => setActiveSubTab("register")}
-                                  className="store-card-link-red"
-                                >
-                                  Registro
-                                </button>
                                 <span style={{ color: '#94a3b8', display: 'block', fontWeight: 'normal', fontSize: '0.65rem', marginTop: '4px' }}>para ver precio de distribuidor</span>
                               </div>
                             </div>
@@ -774,17 +760,6 @@ export default function PublicStoreView({
               <button type="submit" disabled={loginLoad} className="store-form-btn-submit">
                 {loginLoad ? "Verificando..." : "Iniciar Sesión Cliente"}
               </button>
-
-              <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.8rem' }}>
-                <span style={{ color: '#64748b' }}>¿Aún no eres distribuidor? </span>
-                <button 
-                  type="button"
-                  onClick={() => setActiveSubTab("register")}
-                  className="store-card-link-red animate-pulse"
-                >
-                  Regístrate aquí
-                </button>
-              </div>
             </form>
           </div>
         )}
