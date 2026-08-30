@@ -672,13 +672,34 @@ export default function PublicStoreView({
                                 </div>
                               </div>
 
-                              <button 
-                                onClick={() => addToCart(product)}
-                                disabled={!hasStock}
-                                className="store-card-btn-order"
-                              >
-                                Pedir
-                              </button>
+                              {hasStock ? (
+                                <button 
+                                  onClick={() => addToCart(product)}
+                                  className="store-card-btn-order"
+                                >
+                                  Pedir
+                                </button>
+                              ) : (
+                                <a 
+                                  href={`https://wa.me/51923030000?text=Hola,%20deseo%20cotizar/consultar%20el%20producto%20${encodeURIComponent(product.brand + ' ' + product.name)}%20que%20figura%20sin%20stock.`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    background: '#22c55e',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.7rem',
+                                    padding: '8px 12px',
+                                    borderRadius: '6px',
+                                    textDecoration: 'none',
+                                    textTransform: 'uppercase',
+                                    display: 'inline-block',
+                                    textAlign: 'center'
+                                  }}
+                                >
+                                  Cotizar
+                                </a>
+                              )}
                             </div>
                           ) : (
                             <div style={{ textAlign: 'center', padding: '4px 0' }}>
@@ -696,6 +717,27 @@ export default function PublicStoreView({
                                   Iniciar sesión
                                 </button>
                                 <span style={{ color: '#94a3b8', display: 'block', fontWeight: 'normal', fontSize: '0.65rem', marginTop: '4px' }}>para ver precio de distribuidor</span>
+                              </div>
+                              
+                              {/* Cotizar con Asesor (WhatsApp) for Guests */}
+                              <div style={{ marginTop: '10px', borderTop: '1px dashed #cbd5e1', paddingTop: '8px' }}>
+                                <a 
+                                  href={`https://wa.me/51923030000?text=Hola,%20deseo%20más%20información%20y%20cotizar%20el%20producto%20${encodeURIComponent(product.brand + ' ' + product.name)}.`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    color: '#16a34a',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.75rem',
+                                    textDecoration: 'none',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  💬 Cotizar con Asesor
+                                </a>
                               </div>
                             </div>
                           )}
