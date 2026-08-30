@@ -31,6 +31,7 @@ import {
   ArrowDownRight,
   Bookmark,
   Menu,
+  ShoppingCart,
   CreditCard,
   Camera,
   Paperclip,
