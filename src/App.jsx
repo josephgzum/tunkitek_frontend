@@ -427,6 +427,32 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  // Logout handler
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCustomerCredits([]);
+    setCustomerPurchases([]);
+    localStorage.removeItem("onu_inventory_current_user");
+    localStorage.removeItem("tunkitek_token");
+    setActiveTab("dashboard");
+  };
+
+  // Escuchar eventos de expiración de sesión y redirigir al login
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      // Evitar alertas duplicadas si múltiples peticiones fallan en paralelo
+      if (localStorage.getItem("onu_inventory_current_user")) {
+        alert("Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.");
+        handleLogout();
+      }
+    };
+
+    window.addEventListener("tunkitek-session-expired", handleSessionExpired);
+    return () => {
+      window.removeEventListener("tunkitek-session-expired", handleSessionExpired);
+    };
+  }, []);
+
   const applyThemePalette = (paletteId) => {
     const theme = THEME_PALETTES.find(t => t.id === paletteId) || THEME_PALETTES[0];
     document.documentElement.style.setProperty("--color-primary", theme.primary);
@@ -970,31 +996,7 @@ export default function App() {
     );
   };
 
-  // Logout handler
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setCustomerCredits([]);
-    setCustomerPurchases([]);
-    localStorage.removeItem("onu_inventory_current_user");
-    localStorage.removeItem("tunkitek_token");
-    setActiveTab("dashboard");
-  };
 
-  // Escuchar eventos de expiración de sesión y redirigir al login
-  useEffect(() => {
-    const handleSessionExpired = () => {
-      // Evitar alertas duplicadas si múltiples peticiones fallan en paralelo
-      if (localStorage.getItem("onu_inventory_current_user")) {
-        alert("Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.");
-        handleLogout();
-      }
-    };
-
-    window.addEventListener("tunkitek-session-expired", handleSessionExpired);
-    return () => {
-      window.removeEventListener("tunkitek-session-expired", handleSessionExpired);
-    };
-  }, []);
 
   // Reset/Seed handler
   const handleResetToSeed = () => {
