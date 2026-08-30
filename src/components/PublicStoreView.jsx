@@ -52,6 +52,7 @@ export default function PublicStoreView({
   // Sidebar Filters
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [onlyInStock, setOnlyInStock] = useState(false);
+  const [selectedBrands, setSelectedBrands] = useState([]);
   
   // Cart state
   const [cart, setCart] = useState([]);
@@ -279,6 +280,7 @@ export default function PublicStoreView({
 
   // Filter and Category mappings
   const categories = ["Todos", ...new Set(catalog.map(p => p.type))];
+  const brandsList = [...new Set(catalog.map(p => p.brand))];
 
   const filteredCatalog = catalog.filter(p => {
     const matchesSearch = 
@@ -288,8 +290,9 @@ export default function PublicStoreView({
     
     const matchesCategory = selectedCategory === "Todos" || p.type === selectedCategory;
     const matchesStock = !onlyInStock || p.qtyAvailable > 0;
+    const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(p.brand);
 
-    return matchesSearch && matchesCategory && matchesStock;
+    return matchesSearch && matchesCategory && matchesStock && matchesBrand;
   });
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -449,9 +452,15 @@ export default function PublicStoreView({
             </button>
             <button 
               style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 550 }} 
-              onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }}
+              onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); setSelectedBrands([]); }}
             >
               Todos los Productos
+            </button>
+            <button 
+              style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 550 }} 
+              onClick={() => setActiveSubTab("about-us")}
+            >
+              Nosotros
             </button>
 
             {isClient && (
@@ -560,6 +569,34 @@ export default function PublicStoreView({
                   </span>
                 </label>
               </div>
+
+              {/* Brands Filter (Checkboxes) */}
+              <div style={{ marginTop: '24px' }}>
+                <h3 className="store-sidebar-title">Marcas</h3>
+                <div className="store-sidebar-list">
+                  {brandsList.map(brand => (
+                    <label key={brand} className="store-sidebar-label">
+                      <input 
+                        type="checkbox"
+                        checked={selectedBrands.includes(brand)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedBrands([...selectedBrands, brand]);
+                          } else {
+                            setSelectedBrands(selectedBrands.filter(b => b !== brand));
+                          }
+                        }}
+                      />
+                      <span style={{ 
+                        fontWeight: selectedBrands.includes(brand) ? 'bold' : 'normal', 
+                        color: selectedBrands.includes(brand) ? '#dc2626' : '#475569' 
+                      }}>
+                        {brand}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </aside>
 
             {/* PRODUCT CATALOG GRID */}
@@ -569,29 +606,6 @@ export default function PublicStoreView({
                 <div className="store-client-banner">
                   <span>🔑 Distribuidor: <strong style={{ color: '#064e3b' }}>{currentUser.name}</strong>. Acceso exclusivo con precios autorizados.</span>
                   <span style={{ background: '#059669', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Precios Visibles</span>
-                </div>
-              )}
-
-              {/* Presentación Corporativa */}
-              {selectedCategory === "Todos" && !searchQuery && (
-                <div style={{
-                  background: 'white',
-                  borderRadius: '8px',
-                  padding: '20px 24px',
-                  marginBottom: '24px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                  border: '1px solid #e2e8f0',
-                  borderLeft: '4px solid #dc2626'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '1.2rem' }}>🇵🇪</span>
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 805, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Nuestra Esencia - Tunkitek (Tunki Networks)
-                    </h3>
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.45rem', color: '#475569', fontStyle: 'italic', fontWeight: '500' }}>
-                    {"\"En Tunkitek (Tunki Networks), tomamos nuestro nombre del ave nacional del Perú porque compartimos su esencia: nacimos para conectar ecosistemas complejos. Así como el Tunki habita en la intersección de los Andes y la Amazonía, nosotros construimos los puentes tecnológicos que unen a las empresas con su futuro. Destacamos por ofrecer una señal clara, un servicio ágil y soluciones de infraestructura robustas que se adaptan a cualquier entorno. Somos tecnología de alto rendimiento con verdadero ADN peruano.\""}
-                  </p>
                 </div>
               )}
 
@@ -1477,7 +1491,104 @@ export default function PublicStoreView({
           </>
         )}
 
+        {/* TAB: ABOUT US */}
+        {activeSubTab === "about-us" && (
+          <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '32px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', flex: 1, alignSelf: 'center', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
+              <span style={{ fontSize: '1.5rem' }}>🇵🇪</span>
+              <h2 className="store-catalog-title">Quiénes Somos - Tunkitek (Tunki Networks)</h2>
+            </div>
+            
+            <p style={{ fontSize: '0.95rem', lineHeight: '1.65rem', color: '#334155', fontWeight: '500', marginBottom: '24px' }}>
+              En Tunkitek (Tunki Networks), tomamos nuestro nombre del ave nacional del Perú porque compartimos su esencia: nacimos para conectar ecosistemas complejos. Así como el Tunki habita en la intersección de los Andes y la Amazonía, nosotros construimos los puentes tecnológicos que unen a las empresas con su futuro.
+            </p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ border: '1px solid #e2e8f0', padding: '16px', borderRadius: '8px', background: '#f8fafc' }}>
+                <h4 style={{ color: '#dc2626', margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>⚡ Señal Clara</h4>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: '1.15rem' }}>Ofrecemos una comunicación sin interferencias y máxima estabilidad para interconectar tus operaciones.</p>
+              </div>
+              
+              <div style={{ border: '1px solid #e2e8f0', padding: '16px', borderRadius: '8px', background: '#f8fafc' }}>
+                <h4 style={{ color: '#dc2626', margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>⏱️ Servicio Ágil</h4>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: '1.15rem' }}>Nuestra prioridad es la atención rápida y eficiente de tus pedidos, cotizaciones y requerimientos.</p>
+              </div>
+              
+              <div style={{ border: '1px solid #e2e8f0', padding: '16px', borderRadius: '8px', background: '#f8fafc' }}>
+                <h4 style={{ color: '#dc2626', margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase' }}>🏗️ Infraestructura Robustas</h4>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: '1.15rem' }}>Soluciones duraderas y escalables diseñadas para soportar condiciones climáticas y geográficas diversas.</p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.9rem', lineHeight: '1.5rem', color: '#475569', fontStyle: 'italic', background: '#fffbeb', border: '1px solid #fef3c7', padding: '16px', borderRadius: '6px' }}>
+              {"\"Destacamos por ofrecer una señal clara, un servicio ágil y soluciones de infraestructura robustas que se adaptan a cualquier entorno. Somos tecnología de alto rendimiento con verdadero ADN peruano.\""}
+            </p>
+          </div>
+        )}
+
       </div>
+
+      {/* 6. STORE FOOTER */}
+      {!hideHeader && (
+        <footer className="store-footer">
+          <div className="store-footer-grid">
+            <div className="store-footer-col">
+              <h4>Tunkitek</h4>
+              <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: '1.3rem', color: '#64748b' }}>
+                Tecnología de alto rendimiento con verdadero ADN peruano. Conectando ecosistemas complejos.
+              </p>
+            </div>
+            
+            <div className="store-footer-col">
+              <h4>Enlaces Rápidos</h4>
+              <div className="store-footer-links">
+                <button className="store-footer-link" onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); setSelectedBrands([]); }}>Catálogo</button>
+                <button className="store-footer-link" onClick={() => setActiveSubTab("about-us")}>Nosotros</button>
+                <button className="store-footer-link" onClick={() => {
+                  if (isClient) {
+                    setActiveSubTab("account");
+                    setAccountSection("summary");
+                  } else {
+                    setActiveSubTab("login-customer");
+                  }
+                }}>Mi Cuenta</button>
+              </div>
+            </div>
+            
+            <div className="store-footer-col">
+              <h4>Nuestras Sucursales</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', color: '#94a3b8' }}>
+                <div>📍 <strong>Chimbote:</strong> Av. José Gálvez 557</div>
+                <div>📍 <strong>Chiclayo:</strong> Av. Francisco Bolognesi 536</div>
+              </div>
+            </div>
+            
+            <div className="store-footer-col">
+              <h4>Transparencia</h4>
+              <div className="store-footer-links">
+                <a 
+                  href="https://wa.me/51923030000?text=Hola,%20deseo%20registrar%20un%20reclamo/queja%20en%20el%20Libro%20de%20Reclamaciones."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="store-footer-link"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#facc15', fontWeight: 'bold' }}
+                >
+                  📖 Libro de Reclamaciones
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <div className="store-footer-bottom">
+            <span className="store-footer-bottom-text">
+              © {new Date().getFullYear()} Tunkitek (Tunki Networks). Todos los derechos reservados.
+            </span>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Aceptamos transferencias y pagos directos.</span>
+            </div>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }
