@@ -1556,10 +1556,10 @@ export default function PublicStoreView({
             </div>
             
             <div className="store-footer-col">
-              <h4>Nuestras Sucursales</h4>
+              <h4>Contacto</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', color: '#94a3b8' }}>
-                <div>📍 <strong>Chimbote:</strong> Av. José Gálvez 557</div>
-                <div>📍 <strong>Chiclayo:</strong> Av. Francisco Bolognesi 536</div>
+                <div>📍 <strong>Dirección:</strong> Av. José Gálvez 557, Chimbote</div>
+                <div>📞 <strong>Teléfono:</strong> 923030000</div>
               </div>
             </div>
             
