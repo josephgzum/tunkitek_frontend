@@ -429,6 +429,11 @@ export const fetchServerDB = async () => {
     const token = localStorage.getItem("tunkitek_token");
     const headers = token ? { "Authorization": `Bearer ${token}` } : {};
 
+    // Verificar rol restringido para evitar peticiones fallidas a Caja (403)
+    const savedUser = localStorage.getItem("onu_inventory_current_user");
+    const user = savedUser ? JSON.parse(savedUser) : null;
+    const isRestricted = user && (user.role === 'Almacenero' || user.role === 'Cliente');
+
     const [catRes, devRes, custRes, usrRes, vendRes, credRes, ledgRes, lotsRes, settRes, nsRes] = await Promise.all([
       fetch(`${API_URL}/api/catalog`).catch(() => null),
       fetch(`${API_URL}/api/devices`).catch(() => null),
@@ -436,7 +441,7 @@ export const fetchServerDB = async () => {
       fetch(`${API_URL}/api/users`).catch(() => null),
       fetch(`${API_URL}/api/vendors`).catch(() => null),
       fetch(`${API_URL}/api/credits`).catch(() => null),
-      token ? fetch(`${API_URL}/api/ledger`, { headers }).catch(() => null) : Promise.resolve(null),
+      token && !isRestricted ? fetch(`${API_URL}/api/ledger`, { headers }).catch(() => null) : Promise.resolve(null),
       fetch(`${API_URL}/api/lots`).catch(() => null),
       fetch(`${API_URL}/api/settings`).catch(() => null),
       fetch(`${API_URL}/api/non-serialized`).catch(() => null)

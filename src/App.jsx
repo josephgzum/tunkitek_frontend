@@ -574,16 +574,30 @@ export default function App() {
     }
 
     // Connect and sync with central LAN server (server_db.json)
-    fetchServerDB().then(serverData => {
-      if (serverData && serverData.catalog) {
-        reloadDataFromDB(serverData);
-      } else {
-        syncServerDB(localInv);
-      }
-    });
+    const isClient = savedUser ? JSON.parse(savedUser).role === "Cliente" : false;
+    if (!isClient) {
+      fetchServerDB().then(serverData => {
+        if (serverData && serverData.catalog) {
+          reloadDataFromDB(serverData);
+        } else {
+          syncServerDB(localInv);
+        }
+      });
+    }
 
     // Auto poll central server every 8 seconds for multi-device sync
     const syncInterval = setInterval(() => {
+      const storedUser = localStorage.getItem("onu_inventory_current_user");
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      
+      if (parsedUser && parsedUser.role === "Cliente") {
+        const token = localStorage.getItem("tunkitek_token");
+        if (token) {
+          fetchCustomerData(token);
+        }
+        return;
+      }
+
       fetchServerDB().then(serverData => {
         if (serverData && serverData.catalog) {
           reloadDataFromDB(serverData);
