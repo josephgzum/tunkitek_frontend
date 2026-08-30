@@ -37,7 +37,8 @@ export default function PublicStoreView({
   customerOrders = [],
   devices = [],
   onLoginSuccess,
-  onLogout
+  onLogout,
+  hideHeader
 }) {
   const [activeSubTab, setActiveSubTab] = useState("store"); // "store" | "register" | "cart" | "login-customer" | "login-staff" | "account"
   const [accountSection, setAccountSection] = useState("summary"); // "summary" | "purchases" | "credits" | "orders"
