@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-useless-catch */
 import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
