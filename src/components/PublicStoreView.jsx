@@ -579,6 +579,29 @@ export default function PublicStoreView({
                 </div>
               )}
 
+              {/* Presentación Corporativa */}
+              {selectedCategory === "Todos" && !searchQuery && (
+                <div style={{
+                  background: 'white',
+                  borderRadius: '8px',
+                  padding: '20px 24px',
+                  marginBottom: '24px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  border: '1px solid #e2e8f0',
+                  borderLeft: '4px solid #dc2626'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🇵🇪</span>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 805, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Nuestra Esencia - Tunkitek (Tunki Networks)
+                    </h3>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.45rem', color: '#475569', fontStyle: 'italic', fontWeight: '500' }}>
+                    "En Tunkitek (Tunki Networks), tomamos nuestro nombre del ave nacional del Perú porque compartimos su esencia: nacimos para conectar ecosistemas complejos. Así como el Tunki habita en la intersección de los Andes y la Amazonía, nosotros construimos los puentes tecnológicos que unen a las empresas con su futuro. Destacamos por ofrecer una señal clara, un servicio ágil y soluciones de infraestructura robustas que se adaptan a cualquier entorno. Somos tecnología de alto rendimiento con verdadero ADN peruano."
+                  </p>
+                </div>
+              )}
+
               {/* Header section */}
               <div className="store-catalog-header">
                 <div>
