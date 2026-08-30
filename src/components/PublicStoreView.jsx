@@ -223,181 +223,216 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
   const cartTotal = cart.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-100 text-slate-800 font-sans">
+    <div className="store-wrapper">
       
       {/* 1. TOP RED BANNER (SEGO-inspired) */}
       {!hideHeader && (
-        <div className="bg-red-600 text-white text-xs py-1.5 px-4">
-          <div className="container mx-auto flex justify-between items-center flex-wrap gap-2 font-medium">
-            <span>📍 Av. Francisco Bolognesi 536, Chiclayo | 📞 319-2669</span>
-            <span className="bg-slate-900/40 px-2 py-0.5 rounded">Sucursal Chiclayo</span>
-          </div>
+        <div className="store-top-banner">
+          <span>📍 Av. Francisco Bolognesi 536, Chiclayo | 📞 319-2669</span>
+          <span style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 8px', borderRadius: '4px' }}>Sucursal Chiclayo</span>
         </div>
       )}
 
       {/* 2. MAIN HEADER */}
       {!hideHeader && (
-        <header className="bg-white border-b border-slate-200 py-4 px-4 sticky top-0 z-50 shadow-sm">
-          <div className="container mx-auto flex justify-between items-center flex-wrap gap-4">
-            
-            {/* Logo */}
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveSubTab("store")}>
-              <span className="text-3xl font-black italic tracking-tighter text-red-600">TUNQUI</span>
-              <span className="text-2xl font-bold tracking-tight text-slate-800">TEK</span>
+        <header className="store-header">
+          {/* Logo */}
+          <div className="store-logo" onClick={() => setActiveSubTab("store")}>
+            TUNQUI<span>TEK</span>
+          </div>
+
+          {/* Search Bar */}
+          <div className="store-search-container">
+            <input 
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="store-search-input"
+            />
+            <button className="store-search-btn">
+              <Search size={16} />
+            </button>
+          </div>
+
+          {/* Quick Actions / Exchange Rate */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            {/* Exchange Rate Badge */}
+            <div className="store-rate-badge">
+              <span>Tipo de Cambio</span>
+              <span style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>S/. 3.820</span>
             </div>
 
-            {/* Search Bar */}
-            <div className="flex-1 max-w-lg mx-4 relative hidden sm:block">
-              <input 
-                type="text"
-                placeholder="Buscar productos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 pr-12 text-slate-800 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition"
-              />
-              <button className="absolute right-1 top-1 bg-red-600 hover:bg-red-700 text-white p-2 rounded transition">
-                <Search size={16} />
-              </button>
-            </div>
-
-            {/* Quick Actions / Exchange Rate */}
-            <div className="flex items-center gap-6">
-              {/* Exchange Rate Badge */}
-              <div className="bg-red-600 text-white font-bold text-xs px-3 py-2 rounded flex items-center gap-1.5 shadow-sm">
-                <span>Tipo de Cambio</span>
-                <span className="font-mono text-sm">S/. 3.820</span>
+            {/* Cart */}
+            <button 
+              onClick={() => setActiveSubTab("cart")}
+              className="store-action-btn"
+            >
+              <div className="store-action-icon">
+                <ShoppingCart size={20} />
+                {cartCount > 0 && (
+                  <span style={{ 
+                    position: 'absolute', 
+                    top: '-4px', 
+                    right: '-4px', 
+                    background: '#dc2626', 
+                    color: 'white', 
+                    fontSize: '0.65rem', 
+                    fontWeight: 'bold', 
+                    borderRadius: '50%', 
+                    width: '18px', 
+                    height: '18px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}>
+                    {cartCount}
+                  </span>
+                )}
               </div>
+              <div className="hidden md:block" style={{ marginLeft: '8px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', fontWeight: 'bold' }}>MI CARRITO</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#1e293b' }}>Ver Carro</span>
+              </div>
+            </button>
 
-              {/* Cart */}
-              <button 
-                onClick={() => setActiveSubTab("cart")}
-                className="flex items-center gap-2 text-slate-700 hover:text-red-600 transition relative"
-              >
-                <div className="bg-slate-100 p-2 rounded-full relative">
-                  <ShoppingCart size={20} />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-600 text-white text-3xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow">
-                      {cartCount}
-                    </span>
-                  )}
-                </div>
-                <div className="text-left hidden md:block">
-                  <span className="text-2xs text-slate-400 block font-semibold uppercase">Mi Carrito</span>
-                  <span className="text-xs font-bold text-slate-800">Ver Carro</span>
-                </div>
-              </button>
-
-              {/* User Account / Require Login */}
-              <button 
-                onClick={isClient ? undefined : onRequireLogin}
-                className="flex items-center gap-2 text-slate-700 hover:text-red-600 transition"
-              >
-                <div className="bg-slate-100 p-2 rounded-full">
-                  <User size={20} />
-                </div>
-                <div className="text-left hidden md:block">
-                  <span className="text-2xs text-slate-400 block font-semibold uppercase">{isClient ? "Cliente" : "Invitado"}</span>
-                  <span className="text-xs font-bold text-slate-800">{isClient ? currentUser.name : "Mi Cuenta"}</span>
-                </div>
-              </button>
-            </div>
+            {/* User Account / Require Login */}
+            <button 
+              onClick={isClient ? undefined : onRequireLogin}
+              className="store-action-btn"
+            >
+              <div className="store-action-icon">
+                <User size={20} />
+              </div>
+              <div className="hidden md:block" style={{ marginLeft: '8px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', fontWeight: 'bold' }}>{isClient ? "CLIENTE" : "INVITADO"}</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#1e293b' }}>{isClient ? currentUser.name : "Mi Cuenta"}</span>
+              </div>
+            </button>
           </div>
         </header>
       )}
 
       {/* 3. NAVIGATION BAR */}
       {!hideHeader && (
-        <div className="bg-slate-900 text-white text-sm py-2 px-4 shadow">
-          <div className="container mx-auto flex justify-between items-center flex-wrap gap-4">
-            <div className="flex items-center gap-6 font-medium">
-              <button 
-                onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }}
-                className="bg-red-600 text-white font-bold py-1.5 px-4 rounded text-xs flex items-center gap-1.5 hover:bg-red-700 uppercase"
-              >
-                Categorías
-              </button>
-              <button onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }} className="hover:text-red-500 transition">Todos los Productos</button>
-              {!isClient && (
-                <button onClick={() => setActiveSubTab("register")} className="text-yellow-400 hover:text-yellow-300 font-bold transition flex items-center gap-1">
-                  💡 ¿Quieres ser Distribuidor? ¡Regístrate aquí!
-                </button>
-              )}
-            </div>
-            
+        <div className="store-nav-strip">
+          <div className="store-nav-links">
             <button 
-              onClick={onBackToLogin}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-cyan-400 py-1.5 px-3 rounded flex items-center gap-1 font-bold border border-slate-700 uppercase"
+              onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }}
+              className="store-nav-categories-btn"
             >
-              <ArrowLeft size={12} /> Regresar al Login
+              Categorías
             </button>
+            <button 
+              style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 550 }} 
+              onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }}
+            >
+              Todos los Productos
+            </button>
+            {!isClient && (
+              <button 
+                style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold' }} 
+                onClick={() => setActiveSubTab("register")}
+              >
+                💡 ¿Quieres ser Distribuidor? ¡Regístrate aquí!
+              </button>
+            )}
           </div>
+          
+          <button 
+            onClick={onBackToLogin}
+            style={{ 
+              background: 'none', 
+              border: '1px solid #475569', 
+              color: '#22d3ee', 
+              cursor: 'pointer', 
+              fontWeight: 'bold', 
+              padding: '6px 12px', 
+              borderRadius: '4px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '4px', 
+              fontSize: '0.75rem',
+              textTransform: 'uppercase'
+            }}
+          >
+            <ArrowLeft size={12} /> Regresar al Login
+          </button>
         </div>
       )}
 
       {/* 4. EMBEDDED NAVIGATION (For Dashboard view) */}
       {hideHeader && (
-        <div className="bg-white border-b border-slate-200 p-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'between', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <button 
               onClick={() => setActiveSubTab("store")}
-              className={`px-4 py-2 rounded text-xs font-bold uppercase transition ${activeSubTab === "store" ? "bg-red-600 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-700"}`}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                border: 'none',
+                cursor: 'pointer',
+                background: activeSubTab === "store" ? "#dc2626" : "#f1f5f9",
+                color: activeSubTab === "store" ? "white" : "#475569"
+              }}
             >
               Ver Catálogo
             </button>
             <button 
               onClick={() => setActiveSubTab("cart")}
-              className={`px-4 py-2 rounded text-xs font-bold uppercase transition flex items-center gap-2 relative ${activeSubTab === "cart" ? "bg-red-600 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-700"}`}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: activeSubTab === "cart" ? "#dc2626" : "#f1f5f9",
+                color: activeSubTab === "cart" ? "white" : "#475569"
+              }}
             >
               <ShoppingCart size={14} />
               <span>Mi Carrito</span>
               {cartCount > 0 && (
-                <span className="bg-red-600 text-white rounded-full text-3xs font-bold px-1.5 py-0.5">
+                <span style={{ background: '#dc2626', color: 'white', borderRadius: '50%', fontSize: '0.65rem', fontWeight: 'bold', padding: '2px 6px' }}>
                   {cartCount}
                 </span>
               )}
             </button>
           </div>
-          <div className="bg-red-50 text-red-600 text-xs px-3 py-1.5 rounded-full border border-red-200 font-bold font-mono">
+          <div style={{ background: '#fef2f2', color: '#dc2626', fontSize: '0.75rem', px: '12px', py: '6px', borderRadius: '16px', border: '1px solid #fee2e2', fontWeight: 'bold', fontFamily: 'monospace', marginLeft: 'auto' }}>
             💵 Tipo de Cambio: S/. 3.820
           </div>
         </div>
       )}
 
       {/* 5. MAIN SECTION */}
-      <main className="flex-1 container mx-auto p-4 md:p-6">
+      <div className="store-content-container" style={{ flex: 1 }}>
         
-        {/* LOGGED IN CLIENT BANNER */}
-        {isClient && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex justify-between items-center flex-wrap gap-2 shadow-sm">
-            <span className="text-sm text-emerald-800 font-medium">
-              🔑 Sesión activa: <strong className="text-emerald-950 font-bold">{currentUser.name}</strong>. Acceso exclusivo con precios autorizados.
-            </span>
-            <span className="text-2xs bg-emerald-600 text-white px-2 py-1 rounded font-bold uppercase">
-              Precios Visibles
-            </span>
-          </div>
-        )}
-
         {activeSubTab === "store" && (
-          <div className="flex flex-col md:flex-row gap-6">
-            
+          <>
             {/* LEFT SIDEBAR (SEGO style) */}
-            <aside className="w-full md:w-64 flex-shrink-0 bg-white border border-slate-200 rounded-lg p-5 shadow-sm self-start">
-              
+            <aside className="store-sidebar">
               {/* Category radio filter */}
-              <div className="mb-6">
-                <h3 className="font-bold text-slate-900 border-b border-slate-200 pb-2 mb-4 uppercase text-xs tracking-wider">Categorías</h3>
-                <div className="space-y-2.5">
+              <div>
+                <h3 className="store-sidebar-title">Categorías</h3>
+                <div className="store-sidebar-list">
                   {categories.map(cat => (
-                    <label key={cat} className="flex items-center gap-2.5 text-sm cursor-pointer select-none hover:text-red-600 transition">
+                    <label key={cat} className="store-sidebar-label">
                       <input 
                         type="radio"
                         name="category"
                         checked={selectedCategory === cat}
                         onChange={() => setSelectedCategory(cat)}
-                        className="w-4 h-4 text-red-600 border-slate-300 focus:ring-red-500 accent-red-600"
                       />
-                      <span className={selectedCategory === cat ? "font-bold text-red-600" : "text-slate-600"}>
+                      <span style={{ fontWeight: selectedCategory === cat ? 'bold' : 'normal', color: selectedCategory === cat ? '#dc2626' : '#475569' }}>
                         {cat === "Todos" ? "Todos los productos" : cat}
                       </span>
                     </label>
@@ -406,16 +441,15 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
               </div>
 
               {/* Stock Filter checkbox */}
-              <div>
-                <h3 className="font-bold text-slate-900 border-b border-slate-200 pb-2 mb-4 uppercase text-xs tracking-wider">Disponibilidad</h3>
-                <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none hover:text-red-600 transition">
+              <div style={{ marginTop: '24px' }}>
+                <h3 className="store-sidebar-title">Disponibilidad</h3>
+                <label className="store-sidebar-label">
                   <input 
                     type="checkbox"
                     checked={onlyInStock}
                     onChange={(e) => setOnlyInStock(e.target.checked)}
-                    className="w-4 h-4 rounded text-red-600 border-slate-300 focus:ring-red-500 accent-red-600"
                   />
-                  <span className={onlyInStock ? "font-bold text-red-600" : "text-slate-600"}>
+                  <span style={{ fontWeight: onlyInStock ? 'bold' : 'normal', color: onlyInStock ? '#dc2626' : '#475569' }}>
                     Solo productos con stock
                   </span>
                 </label>
@@ -423,121 +457,113 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
             </aside>
 
             {/* PRODUCT CATALOG GRID */}
-            <div className="flex-1">
-              
-              {/* Search mobile / count */}
-              <div className="flex justify-between items-center mb-6 flex-wrap gap-4 border-b border-slate-200 pb-3">
+            <div className="store-catalog-section">
+              {/* Client activation info */}
+              {isClient && (
+                <div className="store-client-banner">
+                  <span>🔑 Sesión activa: <strong style={{ color: '#064e3b' }}>{currentUser.name}</strong>. Acceso exclusivo con precios autorizados.</span>
+                  <span style={{ background: '#059669', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', uppercase: 'true' }}>Precios Visibles</span>
+                </div>
+              )}
+
+              {/* Header section */}
+              <div className="store-catalog-header">
                 <div>
-                  <h2 className="text-lg font-extrabold text-slate-900">
+                  <h2 className="store-catalog-title">
                     {selectedCategory === "Todos" ? "Todos los productos" : selectedCategory}
                   </h2>
-                  <p className="text-xs text-slate-400 font-medium font-mono">{filteredCatalog.length} artículos encontrados</p>
-                </div>
-
-                <div className="block sm:hidden w-full">
-                  <input 
-                    type="text"
-                    placeholder="Buscar productos..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded p-2 text-sm focus:outline-none focus:border-red-600"
-                  />
+                  <div className="store-catalog-subtitle">{filteredCatalog.length} artículos encontrados</div>
                 </div>
               </div>
 
               {loading ? (
-                <div className="text-center py-20 text-slate-400 font-medium">Cargando catálogo de productos...</div>
+                <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8', fontWeight: 500 }}>Cargando catálogo de productos...</div>
               ) : filteredCatalog.length === 0 ? (
-                <div className="text-center py-20 text-slate-400 bg-white border border-slate-200 rounded-lg shadow-sm">
+                <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
                   No se encontraron productos con los filtros seleccionados.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="store-grid">
                   {filteredCatalog.map(product => {
                     const hasStock = product.qtyAvailable > 0;
                     const sku = `SKU: TK-${product.brand.substring(0,3).toUpperCase()}-${product.id.toString().padStart(4, '0')}`;
 
                     return (
-                      <div 
-                        key={product.id}
-                        className="bg-white border border-slate-200 hover:border-red-500 rounded-lg p-5 flex flex-col justify-between shadow-sm hover:shadow-md transition duration-200 relative group"
-                      >
+                      <div key={product.id} className="store-card">
                         {/* Rating Star Badge (SEGO style) */}
-                        <div className="absolute top-4 right-4 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-full px-2 py-0.5 text-3xs font-extrabold flex items-center gap-1">
+                        <div className="store-card-rating">
                           <Star size={10} fill="currentColor" /> 5.0
                         </div>
 
                         <div>
                           {/* Image Box */}
-                          <div className="w-full h-40 bg-slate-100 rounded-lg mb-4 flex items-center justify-center border border-slate-100 group-hover:bg-slate-50/50 transition">
-                            <span className="text-slate-300 font-black text-4xl tracking-tighter uppercase italic select-none">
-                              {product.type}
-                            </span>
+                          <div className="store-card-img-placeholder">
+                            {product.type}
                           </div>
 
                           {/* Category and Stock Badge */}
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-3xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span className="store-card-type-badge">
                               {product.type}
                             </span>
-                            <span className={`text-3xs px-2 py-0.5 rounded font-extrabold uppercase ${hasStock ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                            <span className={"store-card-stock-badge " + (hasStock ? "in" : "out")}>
                               {hasStock ? `${product.qtyAvailable} En Stock` : 'Agotado'}
                             </span>
                           </div>
 
                           {/* Title & Brand */}
-                          <h3 className="font-extrabold text-slate-800 text-sm group-hover:text-red-600 uppercase tracking-tight line-clamp-2 min-h-[40px] mb-1">
+                          <h3 className="store-card-title">
                             {product.brand} {product.name}
                           </h3>
                           
                           {/* SKU */}
-                          <p className="text-3xs text-slate-400 font-mono font-bold mb-3">{sku}</p>
+                          <div className="store-card-sku">{sku}</div>
 
                           {/* Description snippet */}
                           {product.description && (
-                            <p className="text-2xs text-slate-400 line-clamp-2 bg-slate-50 p-2 rounded mb-4">
+                            <p className="store-card-desc">
                               {product.description}
                             </p>
                           )}
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-slate-100">
-                          {/* Pricing and Action */}
+                        {/* Pricing and Action */}
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
                           {isClient ? (
-                            <div className="flex justify-between items-center gap-2">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                               <div>
-                                <span className="text-3xs text-slate-400 font-bold block uppercase">Precio</span>
-                                <span className="text-lg font-black text-slate-850 font-mono">
+                                <span className="store-card-price-lbl">Precio</span>
+                                <div className="store-card-price-val">
                                   {currency}{product.price?.toFixed(2)}
-                                </span>
+                                </div>
                               </div>
 
                               <button 
                                 onClick={() => addToCart(product)}
                                 disabled={!hasStock}
-                                className={`px-4 py-2 rounded text-xs font-bold uppercase transition shadow-sm ${hasStock ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                                className="store-card-btn-order"
                               >
                                 Pedir
                               </button>
                             </div>
                           ) : (
-                            <div className="text-center py-1">
-                              <span className="text-3xs text-slate-400 font-bold block uppercase mb-1">Ver Precio especial</span>
-                              <div className="text-xs font-bold">
+                            <div style={{ textAlign: 'center', padding: '4px 0' }}>
+                              <span className="store-card-price-lbl" style={{ display: 'block', marginBottom: '4px' }}>Ver Precio especial</span>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
                                 <button 
                                   onClick={onRequireLogin}
-                                  className="text-red-600 hover:text-red-700 hover:underline transition"
+                                  className="store-card-link-red"
                                 >
                                   Iniciar sesión
                                 </button>
-                                <span className="text-slate-300 mx-1.5">|</span>
+                                <span style={{ color: '#cbd5e1', margin: '0 8px' }}>|</span>
                                 <button 
                                   onClick={() => setActiveSubTab("register")}
-                                  className="text-red-600 hover:text-red-700 hover:underline transition"
+                                  className="store-card-link-red"
                                 >
                                   Registro
                                 </button>
-                                <span className="text-slate-400 block font-normal text-3xs mt-1">para ver precio de distribuidor</span>
+                                <span style={{ color: '#94a3b8', display: 'block', fontWeight: 'normal', fontSize: '0.65rem', marginTop: '4px' }}>para ver precio de distribuidor</span>
                               </div>
                             </div>
                           )}
@@ -548,52 +574,52 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
                 </div>
               )}
             </div>
-          </div>
+          </>
         )}
 
         {activeSubTab === "register" && !isClient && (
-          <div className="max-w-lg mx-auto bg-white border border-slate-200 p-8 rounded-lg shadow-sm">
-            <div className="flex items-center gap-2.5 mb-4">
-              <UserPlus className="text-red-600" size={26} />
-              <h2 className="text-xl font-extrabold text-slate-900">Solicitud de Registro de Cliente</h2>
+          <div className="store-form-card">
+            <div className="store-form-title">
+              <UserPlus className="text-red-650" style={{ color: '#dc2626' }} size={24} />
+              <span>Solicitud de Registro de Cliente</span>
             </div>
-            <p className="text-xs text-slate-500 mb-6 font-medium">
+            <p className="store-form-subtitle">
               Rellena este formulario para solicitar tu acceso al portal de compras de TUNKITEK. Al ser aprobado por el administrador, podrás ingresar, ver precios especiales y generar pedidos directamente.
             </p>
 
             {regSuccess && (
-              <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-start gap-2">
-                <CheckCircle size={18} className="mt-0.5 flex-shrink-0" />
+              <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', padding: '12px', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '16px', display: 'flex', gap: '8px' }}>
+                <CheckCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
                 <span>{regSuccess}</span>
               </div>
             )}
 
             {regError && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-250 text-red-600 rounded-lg text-sm font-medium">
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '12px', borderRadius: '6px', fontSize: '0.875rem', marginBottom: '16px', fontWeight: 'bold' }}>
                 {regError}
               </div>
             )}
 
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div>
-                <label className="text-2xs text-slate-400 font-bold uppercase block mb-1">Nombre / Razón Social *</label>
-                <div className="relative">
-                  <Building size={16} className="absolute left-3 top-3 text-slate-400" />
+            <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="store-form-group">
+                <label className="store-form-label">Nombre / Razón Social *</label>
+                <div className="store-form-input-wrapper">
+                  <Building size={16} className="store-form-icon" />
                   <input 
                     type="text"
                     required
                     placeholder="Ej. Distribuidora Telecomunicaciones SAC"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 pl-10 text-slate-800 focus:outline-none focus:border-red-600 focus:bg-white text-sm"
+                    className="store-form-input"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="text-2xs text-slate-400 font-bold uppercase block mb-1">Documento (RUC o DNI) *</label>
-                <div className="relative">
-                  <FileText size={16} className="absolute left-3 top-3 text-slate-400" />
+              <div className="store-form-group">
+                <label className="store-form-label">Documento (RUC o DNI) *</label>
+                <div className="store-form-input-wrapper">
+                  <FileText size={16} className="store-form-icon" />
                   <input 
                     type="text"
                     required
@@ -601,85 +627,83 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
                     placeholder="Ej. 20101010101"
                     value={regDocId}
                     onChange={(e) => setRegDocId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 pl-10 text-slate-800 focus:outline-none focus:border-red-600 focus:bg-white text-sm"
+                    className="store-form-input"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-2xs text-slate-400 font-bold uppercase block mb-1">Teléfono</label>
-                  <div className="relative">
-                    <Phone size={16} className="absolute left-3 top-3 text-slate-400" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="store-form-group">
+                  <label className="store-form-label">Teléfono</label>
+                  <div className="store-form-input-wrapper">
+                    <Phone size={16} className="store-form-icon" />
                     <input 
                       type="text"
                       placeholder="Ej. 987654321"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 pl-10 text-slate-800 focus:outline-none focus:border-red-600 focus:bg-white text-sm"
+                      className="store-form-input"
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="text-2xs text-slate-400 font-bold uppercase block mb-1">Email</label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3 top-3 text-slate-400" />
+                <div className="store-form-group">
+                  <label className="store-form-label">Email</label>
+                  <div className="store-form-input-wrapper">
+                    <Mail size={16} className="store-form-icon" />
                     <input 
                       type="email"
                       placeholder="Ej. cliente@correo.com"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 pl-10 text-slate-800 focus:outline-none focus:border-red-600 focus:bg-white text-sm"
+                      className="store-form-input"
                     />
                   </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-2xs text-slate-400 font-bold uppercase block mb-1">Dirección de Entrega</label>
-                <div className="relative">
-                  <MapPin size={16} className="absolute left-3 top-3.5 text-slate-400" />
+              <div className="store-form-group">
+                <label className="store-form-label">Dirección de Entrega</label>
+                <div className="store-form-input-wrapper">
+                  <MapPin size={16} className="store-form-icon" style={{ top: '14px' }} />
                   <textarea 
                     rows={2}
                     placeholder="Calle, Avenida, Distrito..."
                     value={regAddress}
                     onChange={(e) => setRegAddress(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 pl-10 text-slate-800 focus:outline-none focus:border-red-600 focus:bg-white text-sm"
+                    className="store-form-input"
+                    style={{ minHeight: '60px', resize: 'vertical' }}
                   />
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-2xs text-slate-400 font-bold uppercase block mb-1">Contraseña *</label>
+              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px', marginTop: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="store-form-group">
+                    <label className="store-form-label">Contraseña *</label>
                     <input 
                       type="password"
                       required
                       placeholder="Mín. 6 caracteres"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 text-slate-800 focus:outline-none focus:border-red-600 focus:bg-white text-sm"
+                      className="store-form-input-noicon"
                     />
                   </div>
-                  <div>
-                    <label className="text-2xs text-slate-400 font-bold uppercase block mb-1">Repetir Contraseña *</label>
+                  <div className="store-form-group">
+                    <label className="store-form-label">Repetir Contraseña *</label>
                     <input 
                       type="password"
                       required
                       placeholder="Confirmar"
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded p-2.5 text-slate-800 focus:outline-none focus:border-red-600 focus:bg-white text-sm"
+                      className="store-form-input-noicon"
                     />
                   </div>
                 </div>
               </div>
 
-              <button 
-                type="submit"
-                className="w-full mt-4 p-3 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-lg shadow-sm uppercase text-sm tracking-wider transition"
-              >
+              <button type="submit" className="store-form-btn-submit">
                 Enviar Solicitud de Registro
               </button>
             </form>
@@ -687,69 +711,67 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
         )}
 
         {activeSubTab === "cart" && (
-          <div className="max-w-3xl mx-auto bg-white border border-slate-200 p-8 rounded-lg shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-6">
-              <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                <ShoppingCart className="text-red-600" /> Carrito de Pedido
+          <div className="store-cart-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
+              <h2 className="store-catalog-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShoppingCart className="text-red-600" style={{ color: '#dc2626' }} /> 
+                <span>Carrito de Pedido</span>
               </h2>
-              <span className="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-bold">
+              <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 12px', borderRadius: '16px', fontSize: '0.75rem', fontWeight: 'bold' }}>
                 {cartCount} artículo(s)
               </span>
             </div>
 
             {cart.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-slate-400 mb-6 font-medium">No tienes ningún artículo agregado a tu carrito.</p>
+              <div style={{ textAlign: 'center', padding: '48px' }}>
+                <p style={{ color: '#94a3b8', marginBottom: '24px', fontWeight: 500 }}>No tienes ningún artículo agregado a tu carrito.</p>
                 <button 
                   onClick={() => setActiveSubTab("store")}
-                  className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-lg text-xs uppercase tracking-wider transition"
+                  className="store-card-btn-order"
                 >
                   Ver Catálogo
                 </button>
               </div>
             ) : (
               <div>
-                <div className="space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {cart.map(item => {
                     const sku = `SKU: TK-${item.brand.substring(0,3).toUpperCase()}-${item.id.toString().padStart(4, '0')}`;
                     return (
-                      <div 
-                        key={item.id}
-                        className="bg-slate-50 border border-slate-200 p-4 rounded-lg flex items-center justify-between flex-wrap gap-4"
-                      >
-                        <div className="flex-1">
-                          <span className="text-3xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded font-extrabold uppercase tracking-wider mb-1 inline-block">
+                      <div key={item.id} className="store-cart-item">
+                        <div style={{ flex: 1 }}>
+                          <span className="store-card-type-badge" style={{ marginBottom: '4px', display: 'inline-block' }}>
                             {item.type}
                           </span>
-                          <h4 className="font-extrabold text-slate-800 text-sm uppercase">{item.brand} {item.name}</h4>
-                          <p className="text-3xs text-slate-400 font-mono font-bold">{sku}</p>
+                          <h4 style={{ fontSize: '0.875rem', fontWeight: 800, color: '#1e293b', margin: 0, textTransform: 'uppercase' }}>{item.brand} {item.name}</h4>
+                          <span className="store-card-sku">{sku}</span>
                         </div>
 
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 font-bold uppercase">Cant:</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'bold' }}>CANT:</span>
                             <input 
                               type="number"
                               min="1"
                               max={item.qtyAvailable}
                               value={item.quantity}
                               onChange={(e) => updateQuantity(item.id, e.target.value)}
-                              className="bg-white border border-slate-350 rounded p-1 w-16 text-center focus:outline-none focus:border-red-600 text-sm font-bold font-mono"
+                              className="store-cart-qty-input"
                             />
                           </div>
 
-                          <div className="text-right min-w-[100px]">
+                          <div style={{ textAlign: 'right', minWidth: '100px' }}>
                             {isClient ? (
                               <div>
-                                <span className="text-sm font-extrabold text-slate-800 font-mono block">
+                                <span style={{ fontSize: '0.875rem', fontWeight: 900, color: '#1e293b', fontFamily: 'monospace', display: 'block' }}>
                                   {currency}{(item.price * item.quantity).toFixed(2)}
                                 </span>
-                                <span className="text-3xs text-slate-400 font-mono font-bold">
+                                <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontFamily: 'monospace', fontWeight: 'bold' }}>
                                   ({currency}{item.price.toFixed(2)} c/u)
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-3xs text-red-500 font-bold flex items-center gap-1 justify-end">
+                              <span style={{ fontSize: '0.65rem', color: '#dc2626', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
                                 <Lock size={10} /> Precios Privados
                               </span>
                             )}
@@ -757,7 +779,9 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
 
                           <button 
                             onClick={() => removeFromCart(item.id)}
-                            className="text-slate-400 hover:text-red-600 p-1.5 rounded hover:bg-slate-200 transition"
+                            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '6px', borderRadius: '4px' }}
+                            onMouseOver={(e) => e.currentTarget.style.color = '#dc2626'}
+                            onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}
                             title="Quitar"
                           >
                             <Trash2 size={16} />
@@ -768,34 +792,58 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
                   })}
                 </div>
 
-                <div className="border-t border-slate-200 mt-6 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div style={{ borderTop: '1px solid #e2e8f0', marginTop: '24px', paddingTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                   <div>
                     {isClient ? (
-                      <div className="text-left">
-                        <span className="text-3xs text-slate-450 font-bold block uppercase tracking-wider">Total Estimado</span>
-                        <span className="text-2xl font-black text-red-600 font-mono">
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 'bold', display: 'block', uppercase: 'true' }}>Total Estimado</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#dc2626', fontFamily: 'monospace' }}>
                           {currency}{cartTotal.toFixed(2)}
                         </span>
                       </div>
                     ) : (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg max-w-sm">
-                        <p className="text-3xs text-yellow-700 font-semibold">
+                      <div style={{ background: '#fefbeb', border: '1px solid #fde68a', padding: '12px', borderRadius: '6px', maxWidth: '350px' }}>
+                        <p style={{ fontSize: '0.65rem', color: '#b45309', margin: 0, fontWeight: 600 }}>
                           ⚠️ Podrás ver el total y enviar el pedido una vez que el administrador apruebe tu registro de distribuidor e inicies sesión.
                         </p>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-2 w-full sm:w-auto">
+                  <div style={{ display: 'flex', gap: '8px', flex: '1', justifyContent: 'flex-end' }}>
                     <button 
                       onClick={() => setCart([])}
-                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold text-xs uppercase transition tracking-wider"
+                      style={{
+                        padding: '10px 20px',
+                        background: '#f1f5f9',
+                        border: 'none',
+                        color: '#475569',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        textTransform: 'uppercase'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                      onMouseOut={(e) => e.currentTarget.style.background = '#f1f5f9'}
                     >
                       Vaciar Carrito
                     </button>
                     <button 
                       onClick={checkoutOrder}
-                      className="flex-1 sm:flex-initial px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-lg text-xs uppercase tracking-wider transition"
+                      style={{
+                        padding: '10px 24px',
+                        background: '#dc2626',
+                        border: 'none',
+                        color: 'white',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        textTransform: 'uppercase'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#b91c1c'}
+                      onMouseOut={(e) => e.currentTarget.style.background = '#dc2626'}
                     >
                       {isClient ? "Enviar Pedido" : "Inicia Sesión para Pedir"}
                     </button>
@@ -805,7 +853,7 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
             )}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
