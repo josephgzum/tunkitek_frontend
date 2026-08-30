@@ -352,7 +352,7 @@ export default function PublicStoreView({
         <header className="store-header">
           {/* Logo */}
           <div className="store-logo" onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }}>
-            TUNQUI<span>TEK</span>
+            TUNKI<span>TEK</span>
           </div>
 
           {/* Search Bar */}
