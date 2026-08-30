@@ -1807,9 +1807,14 @@ export default function PublicStoreView({
           </div>
           
           <div className="store-footer-bottom">
-            <span className="store-footer-bottom-text">
-              © {new Date().getFullYear()} Tunkitek (Tunki Networks). Todos los derechos reservados.
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span className="store-footer-bottom-text" style={{ fontWeight: 'bold' }}>
+                © {new Date().getFullYear()} Tunkitek (Tunki Networks). Todos los derechos reservados.
+              </span>
+              <span className="store-footer-bottom-text" style={{ fontSize: '0.7rem' }}>
+                ARS CONSULTORES Y SERVICIOS S.A.C. | RUC: 20610569731
+              </span>
+            </div>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Aceptamos transferencias y pagos directos.</span>
             </div>
