@@ -497,8 +497,13 @@ export default function PublicStoreView({ API_URL, currentUser, currency, onRequ
 
                         <div>
                           {/* Image Box */}
-                          <div className="store-card-img-placeholder">
-                            {product.type}
+                          <div className="store-card-img-placeholder" style={{ padding: '16px' }}>
+                            <img 
+                              src="/logo-tunqui-red.png" 
+                              alt="Tunkitek Logo" 
+                              style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', opacity: 0.9 }}
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
                           </div>
 
                           {/* Category and Stock Badge */}
