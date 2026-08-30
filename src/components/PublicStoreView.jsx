@@ -42,7 +42,7 @@ export default function PublicStoreView({
   onLogout,
   hideHeader
 }) {
-  const [activeSubTab, setActiveSubTab] = useState("store"); // "store" | "register" | "cart" | "login-customer" | "login-staff" | "account"
+  const [activeSubTab, setActiveSubTab] = useState("home"); // "home" | "store" | "register" | "cart" | "login-customer" | "login-staff" | "account" | "about-us"
   const [accountSection, setAccountSection] = useState("summary"); // "summary" | "purchases" | "credits" | "orders"
   
   const [catalog, setCatalog] = useState([]);
@@ -443,30 +443,79 @@ export default function PublicStoreView({
       {/* 3. NAVIGATION BAR */}
       {!hideHeader && (
         <div className="store-nav-strip">
-          <div className="store-nav-links">
+          <div className="store-nav-links" style={{ gap: '10px' }}>
             <button 
-              onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }}
-              className="store-nav-categories-btn"
+              onClick={() => setActiveSubTab("home")}
+              style={{
+                background: activeSubTab === "home" ? 'white' : 'transparent',
+                border: 'none',
+                color: activeSubTab === "home" ? '#dc2626' : 'white',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                fontSize: '0.75rem',
+                padding: '6px 14px',
+                borderRadius: '4px',
+                transition: 'all 0.2s ease'
+              }}
             >
-              Categorías
+              Inicio
             </button>
+            
             <button 
-              style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 550 }} 
               onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); setSelectedBrands([]); }}
+              style={{
+                background: activeSubTab === "store" ? 'white' : 'transparent',
+                border: 'none',
+                color: activeSubTab === "store" ? '#dc2626' : 'white',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                fontSize: '0.75rem',
+                padding: '6px 14px',
+                borderRadius: '4px',
+                transition: 'all 0.2s ease'
+              }}
             >
-              Todos los Productos
+              Tienda Online
             </button>
+
             <button 
-              style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 550 }} 
               onClick={() => setActiveSubTab("about-us")}
+              style={{
+                background: activeSubTab === "about-us" ? 'white' : 'transparent',
+                border: 'none',
+                color: activeSubTab === "about-us" ? '#dc2626' : 'white',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                fontSize: '0.75rem',
+                padding: '6px 14px',
+                borderRadius: '4px',
+                transition: 'all 0.2s ease'
+              }}
             >
               Nosotros
             </button>
 
             {isClient && (
               <button 
-                style={{ background: 'none', border: 'none', color: '#facc15', cursor: 'pointer', fontWeight: 'bold' }} 
                 onClick={() => { setActiveSubTab("account"); setAccountSection("summary"); }}
+                style={{
+                  background: activeSubTab === "account" ? 'white' : 'transparent',
+                  border: 'none',
+                  color: activeSubTab === "account" ? '#dc2626' : '#facc15',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                  padding: '6px 14px',
+                  borderRadius: '4px',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
               >
                 📊 Mi Panel de Distribuidor
               </button>
@@ -530,6 +579,184 @@ export default function PublicStoreView({
       {/* 5. MAIN CONTENT AREA */}
       <div className="store-content-container" style={{ flex: 1 }}>
         
+        {/* TAB: CORPORATE HOME PAGE */}
+        {activeSubTab === "home" && (
+          <div style={{ width: '100%', maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px', boxSizing: 'border-box' }}>
+            {/* Hero Banner */}
+            <div style={{ 
+              background: '#0f172a', 
+              color: 'white', 
+              borderRadius: '12px', 
+              padding: '60px 32px', 
+              textAlign: 'center',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ position: 'relative', zIndex: 2 }}>
+                <span style={{ 
+                  background: '#dc2626', 
+                  color: 'white', 
+                  fontSize: '0.65rem', 
+                  fontWeight: 'bold', 
+                  padding: '4px 12px', 
+                  borderRadius: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em'
+                }}>
+                  Infraestructura & Tecnología
+                </span>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 900, margin: '16px 0 8px 0', letterSpacing: '-0.03em', color: '#ffffff' }}>
+                  TUNKITEK
+                </h1>
+                <p style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '700px', margin: '0 auto 24px auto', lineHeight: '1.6rem', fontWeight: '500' }}>
+                  Soluciones integrales en telecomunicaciones, comercialización de equipamiento de fibra óptica e integración de proyectos tecnológicos con verdadero ADN peruano.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); setSelectedBrands([]); }}
+                    style={{
+                      background: '#dc2626',
+                      color: 'white',
+                      border: 'none',
+                      fontWeight: 'bold',
+                      fontSize: '0.8rem',
+                      padding: '12px 24px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      textTransform: 'uppercase',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#b91c1c'}
+                    onMouseOut={(e) => e.currentTarget.style.background = '#dc2626'}
+                  >
+                    🛒 Explorar Catálogo
+                  </button>
+                  <a 
+                    href="https://wa.me/51923030000?text=Hola,%20deseo%20cotizar%20servicios/equipos%20con%20Tunkitek."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: '#22c55e',
+                      color: 'white',
+                      fontWeight: 'bold',
+                      fontSize: '0.8rem',
+                      padding: '12px 24px',
+                      borderRadius: '6px',
+                      textDecoration: 'none',
+                      textTransform: 'uppercase',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    💬 Contactar Asesor
+                  </a>
+                </div>
+              </div>
+              {/* Background watermark */}
+              <div style={{
+                position: 'absolute',
+                right: '-20px',
+                bottom: '-20px',
+                opacity: 0.05,
+                fontSize: '12rem',
+                fontWeight: 900,
+                color: 'white',
+                userSelect: 'none',
+                fontStyle: 'italic'
+              }}>
+                TUNKI
+              </div>
+            </div>
+
+            {/* Líneas de Negocio (Modules Grid) */}
+            <div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', textAlign: 'center', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Nuestras Líneas de Negocio
+              </h2>
+              <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', marginBottom: '24px', maxWidth: '600px', margin: '0 auto 32px auto' }}>
+                Diseñamos, ejecutamos y suministramos todo lo que tu red y empresa necesitan para alcanzar el máximo rendimiento.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
+                {/* Module 1 */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px', borderTop: '4px solid #dc2626', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                  <div style={{ fontSize: '1.8rem', marginBottom: '12px' }}>📡</div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 10px 0', textTransform: 'uppercase' }}>
+                    Servicios de Telecomunicaciones
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: '1.35rem' }}>
+                    Ejecución, diseño, tendido y mantenimiento de redes de fibra óptica (FTTH/GPON), fusiones de precisión, empalmes mecánicos, enlaces inalámbricos de alta disponibilidad y soporte de planta externa.
+                  </p>
+                </div>
+
+                {/* Module 2 */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px', borderTop: '4px solid #dc2626', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                  <div style={{ fontSize: '1.8rem', marginBottom: '12px' }}>🔌</div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 10px 0', textTransform: 'uppercase' }}>
+                    Comercialización de Bienes
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: '1.35rem' }}>
+                    Distribución y venta directa de equipamiento de telecomunicaciones homologado: ONUs/ONTs, OLTs, switches, routers, conversores de medios, bandejas de distribución (ODF), cables y consumibles de fibra.
+                  </p>
+                </div>
+
+                {/* Module 3 */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px', borderTop: '4px solid #dc2626', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                  <div style={{ fontSize: '1.8rem', marginBottom: '12px' }}>⚙️</div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 10px 0', textTransform: 'uppercase' }}>
+                    Integración de Proyectos
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: '1.35rem' }}>
+                    Soluciones tecnológicas llave en mano para ISPs, operadores de cable y corporativos. Integramos sistemas uniendo hardware de alto rendimiento y software de aprovisionamiento optimizado.
+                  </p>
+                </div>
+
+                {/* Module 4 */}
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '24px', borderTop: '4px solid #dc2626', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                  <div style={{ fontSize: '1.8rem', marginBottom: '12px' }}>💻</div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 10px 0', textTransform: 'uppercase' }}>
+                    Servicios Informáticos
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: '1.35rem' }}>
+                    Soporte de sistemas, configuración y administración de servidores locales y en la nube (cloud), consultoría en seguridad de red y auditorías informáticas para garantizar la continuidad operativa de tu negocio.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats / Pitch */}
+            <div style={{ 
+              background: '#f1f5f9', 
+              borderRadius: '8px', 
+              padding: '24px',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-around',
+              flexWrap: 'wrap',
+              gap: '24px',
+              textAlign: 'center'
+            }}>
+              <div>
+                <strong style={{ fontSize: '1.5rem', color: '#dc2626', display: 'block', fontFamily: 'monospace' }}>100%</strong>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Garantía y Soporte</span>
+              </div>
+              <div style={{ borderLeft: '1px solid #cbd5e1', height: '40px' }}></div>
+              <div>
+                <strong style={{ fontSize: '1.5rem', color: '#dc2626', display: 'block', fontFamily: 'monospace' }}>24/7</strong>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Servicios de Emergencia</span>
+              </div>
+              <div style={{ borderLeft: '1px solid #cbd5e1', height: '40px' }}></div>
+              <div>
+                <strong style={{ fontSize: '1.5rem', color: '#dc2626', display: 'block', fontFamily: 'monospace' }}>ISPs y Empresas</strong>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Clientes de Confianza</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TAB: STORE CATALOG */}
         {activeSubTab === "store" && (
           <>
