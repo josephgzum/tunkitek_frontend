@@ -51,6 +51,26 @@ import {
   API_URL
 } from "./data/mockData";
 
+// Interceptar todas las peticiones fetch de forma global para capturar errores de sesión expirada (401)
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  try {
+    const response = await originalFetch(...args);
+    const requestUrl = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+    const isLoginOrPassChange = 
+      requestUrl.includes('/login') || 
+      requestUrl.includes('/change-password');
+      
+    if (response.status === 401 && !isLoginOrPassChange) {
+      console.warn("Sesión expirada (401). Despachando evento de expiración.");
+      window.dispatchEvent(new CustomEvent("tunkitek-session-expired"));
+    }
+    return response;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const THEME_PALETTES = [
   {
     id: "cyan",
@@ -959,6 +979,22 @@ export default function App() {
     localStorage.removeItem("tunkitek_token");
     setActiveTab("dashboard");
   };
+
+  // Escuchar eventos de expiración de sesión y redirigir al login
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      // Evitar alertas duplicadas si múltiples peticiones fallan en paralelo
+      if (localStorage.getItem("onu_inventory_current_user")) {
+        alert("Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.");
+        handleLogout();
+      }
+    };
+
+    window.addEventListener("tunkitek-session-expired", handleSessionExpired);
+    return () => {
+      window.removeEventListener("tunkitek-session-expired", handleSessionExpired);
+    };
+  }, []);
 
   // Reset/Seed handler
   const handleResetToSeed = () => {
