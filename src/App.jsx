@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 
 import QrScanner from "./components/QrScanner";
+import PublicStoreView from "./components/PublicStoreView";
 import {
   getInventory,
   saveInventory,
@@ -183,6 +184,7 @@ const formatShortDate = (dateStr) => {
 
 export default function App() {
   const [themePalette, setThemePalette] = useState("cyan");
+  const [viewMode, setViewMode] = useState("app"); // "app" | "store"
   // Session State
   const [currentUser, setCurrentUser] = useState(null);
   const [loginUsername, setLoginUsername] = useState("");
@@ -191,6 +193,7 @@ export default function App() {
   const [loginPortal, setLoginPortal] = useState("admin"); // "admin" o "customer"
   const [customerCredits, setCustomerCredits] = useState([]);
   const [customerPurchases, setCustomerPurchases] = useState([]);
+  const [customerOrders, setCustomerOrders] = useState([]);
   const [purchasesSearch, setPurchasesSearch] = useState("");
 
   const fetchCustomerData = (authToken) => {
@@ -209,7 +212,47 @@ export default function App() {
         if (!data.error) setCustomerPurchases(data);
       })
       .catch(e => console.error("Error loading customer purchases:", e));
+
+    fetch(API_URL + "/api/store/client/orders", { headers })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) setCustomerOrders(data);
+      })
+      .catch(e => console.error("Error loading customer orders:", e));
   };
+
+  const [adminOrders, setAdminOrders] = useState([]);
+  const [adminPreRegs, setAdminPreRegs] = useState([]);
+  
+  // Order processing states
+  const [processingOrder, setProcessingOrder] = useState(null);
+  const [procPaymentCondition, setProcPaymentCondition] = useState("Contado");
+  const [procInitialPayment, setProcInitialPayment] = useState("0.00");
+  const [procSerialAssignments, setProcSerialAssignments] = useState({}); // { [productId]: [deviceIds...] }
+
+  useEffect(() => {
+    const adminToken = localStorage.getItem("tunkitek_token");
+    if (!adminToken) return;
+    const headers = { "Authorization": `Bearer ${adminToken}` };
+
+    if (activeTab === "admin-orders") {
+      fetch(API_URL + "/api/admin-actions/orders", { headers })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error) setAdminOrders(data);
+        })
+        .catch(e => console.error("Error loading admin orders:", e));
+    }
+
+    if (activeTab === "admin-pre-registrations") {
+      fetch(API_URL + "/api/admin-actions/pre-registrations", { headers })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error) setAdminPreRegs(data);
+        })
+        .catch(e => console.error("Error loading pre-registrations:", e));
+    }
+  }, [activeTab]);
 
   const [activeTab, setActiveTab] = useState("dashboard");
   const [devices, setDevices] = useState([]);
@@ -778,6 +821,19 @@ export default function App() {
     alert("Usuario actualizado correctamente.");
   };
 
+  // RENDER PUBLIC STORE VIEW IF ACTIVE
+  if (viewMode === "store") {
+    return (
+      <PublicStoreView
+        API_URL={API_URL}
+        currentUser={currentUser}
+        currency={currency}
+        onRequireLogin={() => setViewMode("app")}
+        onBackToLogin={() => setViewMode("app")}
+      />
+    );
+  }
+
   // RENDER LOGIN SCREEN IF NO SESSION
   if (!currentUser) {
     return (
@@ -884,6 +940,16 @@ export default function App() {
                   </div>
                 )}
               </form>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", borderTop: "1px solid var(--border-color)", padding: "16px 0 0 0", marginTop: "16px", textAlign: "center" }}>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("store")}
+                  className="btn btn-secondary w-full"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", border: "1px solid var(--color-primary-glow)", animation: "pulse 2s infinite" }}
+                >
+                  <Sparkles size={16} /> Ver Catálogo / Solicitar Acceso
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -2632,6 +2698,20 @@ export default function App() {
                 <CreditCard size={20} />
                 Mis Cuentas
               </button>
+              <button
+                onClick={() => setActiveTab("customer-store")}
+                className={`sidebar-nav-item ${activeTab === "customer-store" ? "active" : ""}`}
+              >
+                <Sparkles size={20} />
+                Tienda Online
+              </button>
+              <button
+                onClick={() => setActiveTab("customer-orders")}
+                className={`sidebar-nav-item ${activeTab === "customer-orders" ? "active" : ""}`}
+              >
+                <FileText size={20} />
+                Mis Pedidos
+              </button>
             </>
           ) : (
             <>
@@ -2709,6 +2789,26 @@ export default function App() {
                 </button>
               )}
 
+              {!isAlmacenero && (
+                <button
+                  onClick={() => setActiveTab("admin-orders")}
+                  className={`sidebar-nav-item ${activeTab === "admin-orders" ? "active" : ""}`}
+                >
+                  <ShoppingCart size={20} />
+                  Pedidos Clientes
+                </button>
+              )}
+
+              {!isAlmacenero && (
+                <button
+                  onClick={() => setActiveTab("admin-pre-registrations")}
+                  className={`sidebar-nav-item ${activeTab === "admin-pre-registrations" ? "active" : ""}`}
+                >
+                  <UserPlus size={20} />
+                  Solicitudes Registro
+                </button>
+              )}
+
               {isAdmin && (
                 <button
                   onClick={() => setActiveTab("finance")}
@@ -2773,14 +2873,28 @@ export default function App() {
               className={`nav-item ${activeTab === "customer-purchases" ? "active" : ""}`}
             >
               <Package size={20} />
-              Mis Equipos
+              Equipos
             </button>
             <button
               onClick={() => { setActiveTab("customer-credits"); setMobileMenuOpen(false); }}
               className={`nav-item ${activeTab === "customer-credits" ? "active" : ""}`}
             >
               <CreditCard size={20} />
-              Mis Cuentas
+              Cuentas
+            </button>
+            <button
+              onClick={() => { setActiveTab("customer-store"); setMobileMenuOpen(false); }}
+              className={`nav-item ${activeTab === "customer-store" ? "active" : ""}`}
+            >
+              <Sparkles size={20} />
+              Tienda
+            </button>
+            <button
+              onClick={() => { setActiveTab("customer-orders"); setMobileMenuOpen(false); }}
+              className={`nav-item ${activeTab === "customer-orders" ? "active" : ""}`}
+            >
+              <FileText size={20} />
+              Pedidos
             </button>
           </>
         ) : (
@@ -3068,6 +3182,412 @@ export default function App() {
                   );
                 })}
               </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "customer-store" && (
+          <div style={{ marginTop: "-20px", marginLeft: "-20px", marginRight: "-20px" }}>
+            <PublicStoreView
+              API_URL={API_URL}
+              currentUser={currentUser}
+              currency={currency}
+              onRequireLogin={() => setActiveTab("customer-summary")}
+              onBackToLogin={handleLogout}
+              hideHeader={true}
+            />
+          </div>
+        )}
+
+        {activeTab === "customer-orders" && (
+          <div>
+            <div className="view-title-container">
+              <div>
+                <h1 className="view-title">Mis Pedidos Realizados</h1>
+                <p className="view-subtitle">Historial de solicitudes de compra enviadas a la tienda.</p>
+              </div>
+            </div>
+
+            {customerOrders.length === 0 ? (
+              <div className="card glass" style={{ textAlign: "center", padding: "40px" }}>
+                <p style={{ color: "var(--color-text-muted)", marginBottom: "20px" }}>No has realizado ningún pedido todavía.</p>
+                <button 
+                  onClick={() => setActiveTab("customer-store")}
+                  className="btn btn-primary"
+                >
+                  Ir a la Tienda Online
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {customerOrders.map(order => {
+                  let badgeClass = "badge-warning";
+                  if (order.status === "Entregado" || order.status === "Aprobado") badgeClass = "badge-success";
+                  if (order.status === "Rechazado") badgeClass = "badge-danger";
+
+                  return (
+                    <div key={order.id} className="lot-card glass" style={{ border: "1px solid var(--border-color)", padding: "20px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "12px", marginBottom: "12px" }}>
+                        <div>
+                          <span className={`badge ${badgeClass}`} style={{ marginBottom: "6px" }}>
+                            {order.status}
+                          </span>
+                          <h3 style={{ fontSize: "1.1rem", fontWeight: "bold", margin: 0 }}>Pedido #{order.id}</h3>
+                          <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>Fecha: {order.date}</span>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>Total del Pedido</span>
+                          <h2 style={{ fontSize: "1.4rem", fontWeight: "800", color: "var(--color-success)", margin: 0 }}>
+                            {currency}{parseFloat(order.totalAmount).toFixed(2)}
+                          </h2>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <h4 style={{ fontSize: "0.85rem", fontWeight: "bold", color: "var(--color-primary)", textTransform: "uppercase" }}>Artículos</h4>
+                        {order.items.map(item => (
+                          <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", background: "rgba(255,255,255,0.02)", padding: "8px 12px", borderRadius: "6px" }}>
+                            <span>{item.quantity}x {item.brand} {item.productName} ({item.productType})</span>
+                            <span style={{ fontWeight: "bold" }}>{currency}{(item.quantity * item.priceUnit).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "admin-pre-registrations" && (
+          <div>
+            <div className="view-title-container">
+              <div>
+                <h1 className="view-title">Solicitudes de Pre-registro</h1>
+                <p className="view-subtitle">Clientes registrados vía la tienda en línea pendientes de evaluación.</p>
+              </div>
+            </div>
+
+            {adminPreRegs.length === 0 ? (
+              <div className="card glass" style={{ textAlign: "center", padding: "40px" }}>
+                <p style={{ color: "var(--color-text-muted)", margin: 0 }}>No hay solicitudes de pre-registro pendientes.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {adminPreRegs.map(pre => {
+                  let badgeClass = "badge-warning";
+                  if (pre.status === "Aprobado") badgeClass = "badge-success";
+                  if (pre.status === "Rechazado") badgeClass = "badge-danger";
+
+                  return (
+                    <div key={pre.id} className="lot-card glass" style={{ border: "1px solid var(--border-color)", padding: "20px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "12px", marginBottom: "12px" }}>
+                        <div>
+                          <span className={`badge ${badgeClass}`} style={{ marginBottom: "6px" }}>
+                            {pre.status}
+                          </span>
+                          <h3 style={{ fontSize: "1.1rem", fontWeight: "bold", margin: 0 }}>{pre.name}</h3>
+                          <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>RUC/DNI: {pre.docId} | Solicitado: {pre.date}</span>
+                        </div>
+                        {pre.status === "Pendiente" && (
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`¿Seguro que deseas APROBAR el registro de ${pre.name}?`)) {
+                                  const headers = { "Authorization": `Bearer ${localStorage.getItem("tunkitek_token")}` };
+                                  fetch(API_URL + `/api/admin-actions/pre-registrations/${pre.id}/approve`, { method: "POST", headers })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                      alert(data.message);
+                                      // Reload list
+                                      setActiveTab(""); setTimeout(() => setActiveTab("admin-pre-registrations"), 10);
+                                    });
+                                }
+                              }}
+                              className="btn btn-success btn-sm"
+                            >
+                              Aprobar
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`¿Seguro que deseas RECHAZAR el registro de ${pre.name}?`)) {
+                                  const headers = { "Authorization": `Bearer ${localStorage.getItem("tunkitek_token")}` };
+                                  fetch(API_URL + `/api/admin-actions/pre-registrations/${pre.id}/reject`, { method: "POST", headers })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                      alert(data.message);
+                                      // Reload list
+                                      setActiveTab(""); setTimeout(() => setActiveTab("admin-pre-registrations"), 10);
+                                    });
+                                }
+                              }}
+                              className="btn btn-danger btn-sm"
+                            >
+                              Rechazar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: "0.85rem", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "10px" }}>
+                        <div>📞 <strong>Teléfono:</strong> {pre.phone || "-"}</div>
+                        <div>✉️ <strong>Correo:</strong> {pre.email || "-"}</div>
+                        <div style={{ gridColumn: "span 2" }}>📍 <strong>Dirección:</strong> {pre.address || "-"}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "admin-orders" && (
+          <div>
+            <div className="view-title-container">
+              <div>
+                <h1 className="view-title">Gestión de Pedidos de Clientes</h1>
+                <p className="view-subtitle">Filtra, revisa, aprueba y despacha las compras entrantes del portal.</p>
+              </div>
+            </div>
+
+            {processingOrder ? (
+              /* ORDER PROCESSING VIEW PANEL */
+              <div className="card glass" style={{ border: "1px solid var(--color-warning)", padding: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "12px", marginBottom: "16px" }}>
+                  <h2 style={{ color: "var(--color-warning)", fontWeight: "bold", fontSize: "1.2rem", margin: 0 }}>Procesando Despacho: Pedido #{processingOrder.id}</h2>
+                  <button 
+                    onClick={() => setProcessingOrder(null)} 
+                    className="btn btn-secondary btn-sm"
+                  >
+                    Volver a la Lista
+                  </button>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                  {/* Left Column: Order Items and Serial Assignments */}
+                  <div>
+                    <h3 style={{ fontSize: "1rem", fontWeight: "semibold", marginBottom: "12px", color: "var(--color-primary)" }}>Artículos del Pedido</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {processingOrder.items.map(item => {
+                        const isSerialized = item.controlMethod === 'serialized';
+                        const availableSNs = devices.filter(d => d.productId === item.productId && d.status === "Disponible");
+
+                        return (
+                          <div key={item.id} style={{ background: "rgba(0,0,0,0.2)", padding: "16px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.04)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                              <span style={{ fontWeight: "bold" }}>{item.brand} {item.productName} ({item.productType})</span>
+                              <span className="badge badge-primary">Cant. Pedida: {item.quantity}</span>
+                            </div>
+
+                            {isSerialized ? (
+                              <div>
+                                <p style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", marginBottom: "8px" }}>
+                                  Selecciona exactamente {item.quantity} números de serie para este artículo:
+                                </p>
+                                {availableSNs.length === 0 ? (
+                                  <p className="text-danger" style={{ fontSize: "0.8rem", margin: 0 }}>⚠️ No hay series disponibles en stock. ¡Registra entradas primero!</p>
+                                ) : (
+                                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", maxHeight: "150px", overflowY: "auto", background: "rgba(0,0,0,0.3)", padding: "8px", borderRadius: "6px" }}>
+                                    {availableSNs.map(dev => {
+                                      const assignedList = procSerialAssignments[item.productId] || [];
+                                      const isChecked = assignedList.includes(dev.id);
+
+                                      return (
+                                        <label key={dev.id} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", cursor: "pointer" }}>
+                                          <input 
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                              let newList = [...assignedList];
+                                              if (e.target.checked) {
+                                                if (newList.length >= item.quantity) {
+                                                  alert(`Ya has seleccionado las ${item.quantity} series requeridas.`);
+                                                  return;
+                                                }
+                                                newList.push(dev.id);
+                                              } else {
+                                                newList = newList.filter(id => id !== dev.id);
+                                              }
+                                              setProcSerialAssignments({
+                                                ...procSerialAssignments,
+                                                [item.productId]: newList
+                                              });
+                                            }}
+                                          />
+                                          <span>{dev.sn}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                <div style={{ fontSize: "0.8rem", marginTop: "6px", color: "var(--color-success)" }}>
+                                  Seleccionados: {(procSerialAssignments[item.productId] || []).length} / {item.quantity}
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>
+                                Artículo simple (No serializado). Se descontará automáticamente del stock disponible.
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Checkout Finance details */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", background: "rgba(255,255,255,0.01)", padding: "20px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.04)" }}>
+                    <h3 style={{ fontSize: "1rem", fontWeight: "semibold", color: "var(--color-primary)" }}>Condiciones de Despacho</h3>
+                    
+                    <div className="form-group">
+                      <label>Condición de Pago</label>
+                      <select 
+                        value={procPaymentCondition}
+                        onChange={(e) => setProcPaymentCondition(e.target.value)}
+                        className="form-control"
+                      >
+                        <option value="Contado">Contado</option>
+                        <option value="Credito">Venta a Crédito</option>
+                      </select>
+                    </div>
+
+                    {procPaymentCondition === "Credito" && (
+                      <div className="form-group">
+                        <label>Cuota Inicial ({currency})</label>
+                        <input 
+                          type="number"
+                          value={procInitialPayment}
+                          onChange={(e) => setProcInitialPayment(e.target.value)}
+                          className="form-control"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    )}
+
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px", marginTop: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px", alignItems: "center" }}>
+                        <span style={{ fontSize: "0.9rem", color: "var(--color-text-muted)" }}>Monto Total a Procesar:</span>
+                        <strong style={{ fontSize: "1.4rem", color: "var(--color-success)" }}>{currency}{parseFloat(processingOrder.totalAmount).toFixed(2)}</strong>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          // Validaciones
+                          for (const item of processingOrder.items) {
+                            if (item.controlMethod === 'serialized') {
+                              const assigned = procSerialAssignments[item.productId] || [];
+                              if (assigned.length !== item.quantity) {
+                                alert(`Debes seleccionar exactamente ${item.quantity} series para cada artículo serializado antes de despachar.`);
+                                return;
+                              }
+                            }
+                          }
+
+                          if (window.confirm("¿Confirmas el despacho de este pedido? Esto actualizará el inventario y generará los asientos contables.")) {
+                            const headers = { 
+                              "Content-Type": "application/json",
+                              "Authorization": `Bearer ${localStorage.getItem("tunkitek_token")}` 
+                            };
+                            const payload = {
+                              paymentCondition: procPaymentCondition,
+                              initialPayment: parseFloat(procInitialPayment) || 0,
+                              serialAssignments: procSerialAssignments
+                            };
+
+                            fetch(API_URL + `/api/admin-actions/orders/${processingOrder.id}/process`, {
+                              method: "POST",
+                              headers,
+                              body: JSON.stringify(payload)
+                            })
+                              .then(res => res.json())
+                              .then(data => {
+                                if (data.error) {
+                                  alert(data.message);
+                                } else {
+                                  alert(data.message);
+                                  setProcessingOrder(null);
+                                  // Refresh lists
+                                  setActiveTab(""); setTimeout(() => setActiveTab("admin-orders"), 10);
+                                  // Sync database
+                                  fetchServerDB().then(serverData => {
+                                    if (serverData && serverData.catalog) reloadDataFromDB(serverData);
+                                  });
+                                }
+                              })
+                              .catch(err => {
+                                console.error(err);
+                                alert("Error de red.");
+                              });
+                          }
+                        }}
+                        className="btn btn-warning w-full"
+                      >
+                        Confirmar y Despachar Pedido
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* ORDERS LIST VIEW */
+              adminOrders.length === 0 ? (
+                <div className="card glass" style={{ textAlign: "center", padding: "40px" }}>
+                  <p style={{ color: "var(--color-text-muted)", margin: 0 }}>No hay pedidos registrados de clientes en la tienda.</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {adminOrders.map(order => {
+                    let badgeClass = "badge-warning";
+                    if (order.status === "Entregado" || order.status === "Aprobado") badgeClass = "badge-success";
+                    if (order.status === "Rechazado") badgeClass = "badge-danger";
+
+                    return (
+                      <div key={order.id} className="lot-card glass" style={{ border: "1px solid var(--border-color)", padding: "20px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "12px", marginBottom: "12px" }}>
+                          <div>
+                            <span className={`badge ${badgeClass}`} style={{ marginBottom: "6px" }}>
+                              {order.status}
+                            </span>
+                            <h3 style={{ fontSize: "1.1rem", fontWeight: "bold", margin: 0 }}>Pedido #{order.id}</h3>
+                            <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>Cliente: <strong>{order.customerName}</strong> | Fecha: {order.date}</span>
+                          </div>
+                          <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+                            <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>Total</span>
+                            <strong style={{ fontSize: "1.2rem", color: "var(--color-success)", margin: "0 0 6px 0" }}>
+                              {currency}{parseFloat(order.totalAmount).toFixed(2)}
+                            </strong>
+                            {order.status === "Pendiente" && (
+                              <button
+                                onClick={() => {
+                                  setProcessingOrder(order);
+                                  setProcPaymentCondition("Contado");
+                                  setProcInitialPayment("0.00");
+                                  setProcSerialAssignments({});
+                                }}
+                                className="btn btn-warning btn-sm animate-pulse"
+                                style={{ display: "flex", alignItems: "center", gap: "4px" }}
+                              >
+                                Despachar Pedido
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {order.items.map(item => (
+                            <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", background: "rgba(255,255,255,0.02)", padding: "6px 12px", borderRadius: "6px" }}>
+                              <span>{item.quantity}x {item.brand} {item.productName} ({item.productType}) - <span style={{ color: "var(--color-text-muted)" }}>{item.controlMethod}</span></span>
+                              <span style={{ fontWeight: "bold" }}>{currency}{(item.quantity * item.priceUnit).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
             )}
           </div>
         )}
