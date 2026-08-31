@@ -2002,23 +2002,23 @@ export default function PublicStoreView({
                           return <div key={sIdx} style={{ height: '8px' }}></div>;
                         }
 
-                        // Detect headers: short text, no punctuation, typical words
+                        const isExplicitHeader = trimmed.startsWith('#');
+                        const cleanText = isExplicitHeader ? trimmed.replace(/^#+\s*/, "") : trimmed;
+
+                        const knownHeadings = [
+                          "CARACTERÍSTICAS PRINCIPALES", "CARACTERISTICAS PRINCIPALES", "CARACTERÍSTICAS", "CARACTERISTICAS",
+                          "RENDIMIENTO", 
+                          "ESPECIFICACIONES FÍSICAS", "ESPECIFICACIONES FISICAS", "ESPECIFICACIONES TÉCNICAS", "ESPECIFICACIONES TECNICAS",
+                          "ESTÁNDARES", "ESTANDARES",
+                          "PROTOCOLOS",
+                          "GESTIÓN", "GESTION",
+                          "ENTORNO / CONDICIONES AMBIENTALES", "ENTORNO", "CONDICIONES AMBIENTALES"
+                        ];
+
                         const isHeading = 
-                          trimmed.length < 40 && 
-                          !/^[0-9•\-*]/.test(trimmed) && 
-                          (
-                            trimmed.toUpperCase() === trimmed || 
-                            trimmed === "Características Principales" ||
-                            trimmed === "Rendimiento" ||
-                            trimmed === "Especificaciones Físicas" ||
-                            trimmed === "Estándares" ||
-                            trimmed === "Protocolos" ||
-                            trimmed === "Especificaciones Técnicas" ||
-                            trimmed === "Gestión" ||
-                            trimmed === "Entorno / Condiciones Ambientales" ||
-                            trimmed === "Entorno" ||
-                            (!trimmed.includes(':') && !trimmed.includes(' x ') && trimmed.length < 30)
-                          );
+                          isExplicitHeader || 
+                          knownHeadings.includes(cleanText.toUpperCase()) || 
+                          (cleanText.length < 40 && cleanText.toUpperCase() === cleanText && !/^[0-9•\-*]/.test(cleanText) && !cleanText.includes(':') && !cleanText.includes(' x '));
 
                         if (isHeading) {
                           return (
@@ -2036,13 +2036,13 @@ export default function PublicStoreView({
                                 letterSpacing: '0.05em'
                               }}
                             >
-                              ⚙️ {trimmed}
+                              ⚙️ {cleanText}
                             </div>
                           );
                         }
 
                         // Bullet list item
-                        const cleanLine = trimmed.replace(/^[•\-*\s]+/, "");
+                        const cleanLine = cleanText.replace(/^[•\-*\s]+/, "");
                         return (
                           <div 
                             key={sIdx} 
