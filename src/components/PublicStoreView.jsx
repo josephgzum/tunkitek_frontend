@@ -1989,15 +1989,79 @@ export default function PublicStoreView({
                     <div style={{ 
                       fontSize: '0.85rem', 
                       color: '#475569', 
-                      lineHeight: '1.5rem', 
                       background: '#f8fafc', 
-                      padding: '16px', 
+                      padding: '20px', 
                       borderRadius: '8px', 
                       border: '1px solid #e2e8f0',
-                      whiteSpace: 'pre-wrap',
-                      fontFamily: 'inherit'
+                      maxHeight: '280px',
+                      overflowY: 'auto'
                     }}>
-                      {selectedProductDetail.technicalSpecs}
+                      {selectedProductDetail.technicalSpecs.split('\n').map((line, sIdx) => {
+                        const trimmed = line.trim();
+                        if (!trimmed) {
+                          return <div key={sIdx} style={{ height: '8px' }}></div>;
+                        }
+
+                        // Detect headers: short text, no punctuation, typical words
+                        const isHeading = 
+                          trimmed.length < 40 && 
+                          !/^[0-9•\-*]/.test(trimmed) && 
+                          (
+                            trimmed.toUpperCase() === trimmed || 
+                            trimmed === "Características Principales" ||
+                            trimmed === "Rendimiento" ||
+                            trimmed === "Especificaciones Físicas" ||
+                            trimmed === "Estándares" ||
+                            trimmed === "Protocolos" ||
+                            trimmed === "Especificaciones Técnicas" ||
+                            trimmed === "Gestión" ||
+                            trimmed === "Entorno / Condiciones Ambientales" ||
+                            trimmed === "Entorno" ||
+                            (!trimmed.includes(':') && !trimmed.includes(' x ') && trimmed.length < 30)
+                          );
+
+                        if (isHeading) {
+                          return (
+                            <div 
+                              key={sIdx} 
+                              style={{ 
+                                fontWeight: '800', 
+                                color: '#dc2626', 
+                                fontSize: '0.8rem', 
+                                marginTop: sIdx === 0 ? '0px' : '16px', 
+                                marginBottom: '8px', 
+                                borderBottom: '2px solid #fee2e2', 
+                                paddingBottom: '4px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                              }}
+                            >
+                              ⚙️ {trimmed}
+                            </div>
+                          );
+                        }
+
+                        // Bullet list item
+                        const cleanLine = trimmed.replace(/^[•\-*\s]+/, "");
+                        return (
+                          <div 
+                            key={sIdx} 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'flex-start', 
+                              gap: '6px', 
+                              fontSize: '0.775rem', 
+                              color: '#334155', 
+                              lineHeight: '1.35rem',
+                              marginBottom: '3px',
+                              paddingLeft: '4px'
+                            }}
+                          >
+                            <span style={{ color: '#dc2626', fontSize: '0.85rem' }}>•</span>
+                            <span style={{ flex: 1 }}>{cleanLine}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Consulte especificaciones detalladas con su asesor técnico.</p>
