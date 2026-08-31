@@ -425,13 +425,8 @@ export default function PublicStoreView({
             </button>
           </div>
 
-          {/* Quick Actions / Exchange Rate */}
+          {/* Quick Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            {/* Exchange Rate Badge */}
-            <div className="store-rate-badge">
-              <span>Tipo de Cambio</span>
-              <span style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>S/. 3.820</span>
-            </div>
 
             {/* Cart */}
             <button 
