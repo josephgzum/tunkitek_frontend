@@ -310,6 +310,7 @@ export default function App() {
   const [addProdImageUrl, setAddProdImageUrl] = useState("");
   const [addProdSpecs, setAddProdSpecs] = useState("");
   const [addProdPdfUrl, setAddProdPdfUrl] = useState("");
+  const [addProdPrice, setAddProdPrice] = useState("0.00");
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEditingProduct, setIsEditingProduct] = useState(false);
@@ -322,6 +323,7 @@ export default function App() {
   const [editProdImageUrl, setEditProdImageUrl] = useState("");
   const [editProdSpecs, setEditProdSpecs] = useState("");
   const [editProdPdfUrl, setEditProdPdfUrl] = useState("");
+  const [editProdPrice, setEditProdPrice] = useState("0.00");
 
   // Filters State (Devices)
   const [searchQuery, setSearchQuery] = useState("");
@@ -1358,7 +1360,8 @@ export default function App() {
       minStockAlert: parseInt(addProdMinAlert) || 2,
       imageUrl: addProdImageUrl.trim() || null,
       technicalSpecs: addProdSpecs.trim() || null,
-      pdfUrl: addProdPdfUrl.trim() || null
+      pdfUrl: addProdPdfUrl.trim() || null,
+      price: parseFloat(addProdPrice) || 0.00
     };
 
     const updatedCatalog = [...catalog, newProd];
@@ -1388,6 +1391,7 @@ export default function App() {
     setAddProdImageUrl("");
     setAddProdSpecs("");
     setAddProdPdfUrl("");
+    setAddProdPrice("0.00");
     alert(`Producto "${name}" agregado al catálogo con éxito.`);
     
     if (entradaSelectedProductId === "") {
@@ -1405,6 +1409,7 @@ export default function App() {
     setEditProdImageUrl(prod.imageUrl || "");
     setEditProdSpecs(prod.technicalSpecs || "");
     setEditProdPdfUrl(prod.pdfUrl || "");
+    setEditProdPrice(prod.price !== undefined && prod.price !== null ? String(prod.price) : "0.00");
     setSelectedProduct(prod);
     setIsEditingProduct(true);
   };
@@ -1427,7 +1432,8 @@ export default function App() {
       minStockAlert: parseInt(editProdMinAlert) || 2,
       imageUrl: editProdImageUrl.trim() || null,
       technicalSpecs: editProdSpecs.trim() || null,
-      pdfUrl: editProdPdfUrl.trim() || null
+      pdfUrl: editProdPdfUrl.trim() || null,
+      price: parseFloat(editProdPrice) || 0.00
     };
 
     const isNowSerialized = editProdControlMethod === "serialized";
@@ -3811,6 +3817,7 @@ export default function App() {
                         <th>Nombre / Modelo</th>
                         <th>Stock Actual</th>
                         <th>Mínimo Alerta</th>
+                        <th>Precio Sug.</th>
                         <th>Descripción</th>
                         {canManageCatalog && <th>Acción</th>}
                       </tr>
@@ -3837,6 +3844,11 @@ export default function App() {
                               {isUnderStock && <span style={{ fontSize: "0.7rem", color: "var(--color-danger)", marginLeft: "6px" }}>¡Stock Bajo!</span>}
                             </td>
                             <td>{prod.minStockAlert}</td>
+                            <td style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
+                              {prod.price !== undefined && prod.price !== null && parseFloat(prod.price) > 0 
+                                ? `${currency}${parseFloat(prod.price).toFixed(2)}` 
+                                : "Dinámico"}
+                            </td>
                             <td style={{ whiteSpace: "normal", fontSize: "0.8rem", color: "var(--color-text-muted)" }}>{prod.description || "-"}</td>
                             {canManageCatalog && (
                               <td>
@@ -4037,6 +4049,24 @@ export default function App() {
                           onChange={(e) => setAddProdPdfUrl(e.target.value)}
                           className="form-control"
                         />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label>Precio Sugerido / Base (Cliente) ({currency})</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={addProdPrice}
+                          onChange={(e) => setAddProdPrice(e.target.value)}
+                          className="form-control"
+                        />
+                        <span style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                          * Si se deja en 0.00, se calculará dinámicamente en base al stock.
+                        </span>
                       </div>
                     </div>
 
@@ -6732,6 +6762,24 @@ export default function App() {
                       onChange={(e) => setEditProdPdfUrl(e.target.value)}
                       className="form-control"
                     />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Precio Sugerido / Base (Cliente) ({currency})</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={editProdPrice}
+                      onChange={(e) => setEditProdPrice(e.target.value)}
+                      className="form-control"
+                    />
+                    <span style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                      * Si se deja en 0.00, se calculará dinámicamente en base al stock.
+                    </span>
                   </div>
                 </div>
               </div>
