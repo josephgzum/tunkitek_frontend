@@ -3845,9 +3845,7 @@ export default function App() {
                             </td>
                             <td>{prod.minStockAlert}</td>
                             <td style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
-                              {prod.price !== undefined && prod.price !== null && parseFloat(prod.price) > 0 
-                                ? `${currency}${parseFloat(prod.price).toFixed(2)}` 
-                                : "Dinámico"}
+                              {currency}{parseFloat(prod.price || 0).toFixed(2)}
                             </td>
                             <td style={{ whiteSpace: "normal", fontSize: "0.8rem", color: "var(--color-text-muted)" }}>{prod.description || "-"}</td>
                             {canManageCatalog && (
@@ -4064,9 +4062,6 @@ export default function App() {
                           onChange={(e) => setAddProdPrice(e.target.value)}
                           className="form-control"
                         />
-                        <span style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                          * Si se deja en 0.00, se calculará dinámicamente en base al stock.
-                        </span>
                       </div>
                     </div>
 
@@ -6777,9 +6772,6 @@ export default function App() {
                       onChange={(e) => setEditProdPrice(e.target.value)}
                       className="form-control"
                     />
-                    <span style={{ fontSize: '0.65rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                      * Si se deja en 0.00, se calculará dinámicamente en base al stock.
-                    </span>
                   </div>
                 </div>
               </div>
