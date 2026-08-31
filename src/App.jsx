@@ -308,6 +308,7 @@ export default function App() {
   const [addProdDesc, setAddProdDesc] = useState("");
   const [addProdMinAlert, setAddProdMinAlert] = useState("2");
   const [addProdImageUrl, setAddProdImageUrl] = useState("");
+  const [addProdSpecs, setAddProdSpecs] = useState("");
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEditingProduct, setIsEditingProduct] = useState(false);
@@ -318,6 +319,7 @@ export default function App() {
   const [editProdDesc, setEditProdDesc] = useState("");
   const [editProdMinAlert, setEditProdMinAlert] = useState("");
   const [editProdImageUrl, setEditProdImageUrl] = useState("");
+  const [editProdSpecs, setEditProdSpecs] = useState("");
 
   // Filters State (Devices)
   const [searchQuery, setSearchQuery] = useState("");
@@ -1352,7 +1354,8 @@ export default function App() {
       controlMethod: addProdControlMethod,
       description: addProdDesc.trim(),
       minStockAlert: parseInt(addProdMinAlert) || 2,
-      imageUrl: addProdImageUrl.trim() || null
+      imageUrl: addProdImageUrl.trim() || null,
+      technicalSpecs: addProdSpecs.trim() || null
     };
 
     const updatedCatalog = [...catalog, newProd];
@@ -1380,6 +1383,7 @@ export default function App() {
     setAddProdDesc("");
     setAddProdMinAlert("2");
     setAddProdImageUrl("");
+    setAddProdSpecs("");
     alert(`Producto "${name}" agregado al catálogo con éxito.`);
     
     if (entradaSelectedProductId === "") {
@@ -1395,6 +1399,7 @@ export default function App() {
     setEditProdDesc(prod.description || "");
     setEditProdMinAlert(String(prod.minStockAlert));
     setEditProdImageUrl(prod.imageUrl || "");
+    setEditProdSpecs(prod.technicalSpecs || "");
     setSelectedProduct(prod);
     setIsEditingProduct(true);
   };
@@ -1415,7 +1420,8 @@ export default function App() {
       controlMethod: editProdControlMethod,
       description: editProdDesc.trim(),
       minStockAlert: parseInt(editProdMinAlert) || 2,
-      imageUrl: editProdImageUrl.trim() || null
+      imageUrl: editProdImageUrl.trim() || null,
+      technicalSpecs: editProdSpecs.trim() || null
     };
 
     const isNowSerialized = editProdControlMethod === "serialized";
@@ -3989,13 +3995,28 @@ export default function App() {
 
                     <div className="form-row">
                       <div className="form-group" style={{ flex: 1 }}>
-                        <label>URL de Imagen (Link de Google Drive / Directo / Imgur)</label>
-                        <input
-                          type="url"
-                          placeholder="https://drive.google.com/uc?export=download&id=... o link directo de imagen"
+                        <label>URLs de Imágenes (Una por línea. Enlaces directos o Google Drive)</label>
+                        <textarea
+                          placeholder="https://drive.google.com/uc?export=download&id=...&#10;https://imgur.com/...&#10;Soporta múltiples imágenes"
                           value={addProdImageUrl}
                           onChange={(e) => setAddProdImageUrl(e.target.value)}
                           className="form-control"
+                          rows={2}
+                          style={{ resize: 'vertical', minHeight: '60px', fontFamily: 'monospace', fontSize: '0.75rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label>Especificaciones Técnicas (Una característica por línea. Ej: Puertos: 4 GE GPON)</label>
+                        <textarea
+                          placeholder="Puertos: 4 GE GPON + Wi-Fi Dual Band&#10;Antena: 5 dBi&#10;Alimentación: 12V DC / 1.5A"
+                          value={addProdSpecs}
+                          onChange={(e) => setAddProdSpecs(e.target.value)}
+                          className="form-control"
+                          rows={3}
+                          style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'monospace', fontSize: '0.75rem' }}
                         />
                       </div>
                     </div>
@@ -6656,13 +6677,28 @@ export default function App() {
 
                 <div className="form-row">
                   <div className="form-group" style={{ flex: 1 }}>
-                    <label>URL de Imagen (Link de Google Drive / Directo / Imgur)</label>
-                    <input
-                      type="url"
-                      placeholder="https://drive.google.com/uc?export=download&id=... o link directo de imagen"
+                    <label>URLs de Imágenes (Una por línea. Enlaces directos o Google Drive)</label>
+                    <textarea
+                      placeholder="https://drive.google.com/uc?export=download&id=...&#10;https://imgur.com/...&#10;Soporta múltiples imágenes"
                       value={editProdImageUrl}
                       onChange={(e) => setEditProdImageUrl(e.target.value)}
                       className="form-control"
+                      rows={2}
+                      style={{ resize: 'vertical', minHeight: '60px', fontFamily: 'monospace', fontSize: '0.75rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Especificaciones Técnicas (Una característica por línea. Ej: Puertos: 4 GE GPON)</label>
+                    <textarea
+                      placeholder="Puertos: 4 GE GPON + Wi-Fi Dual Band&#10;Antena: 5 dBi&#10;Alimentación: 12V DC / 1.5A"
+                      value={editProdSpecs}
+                      onChange={(e) => setEditProdSpecs(e.target.value)}
+                      className="form-control"
+                      rows={3}
+                      style={{ resize: 'vertical', minHeight: '80px', fontFamily: 'monospace', fontSize: '0.75rem' }}
                     />
                   </div>
                 </div>

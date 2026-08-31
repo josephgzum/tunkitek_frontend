@@ -54,6 +54,10 @@ export default function PublicStoreView({
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [selectedBrands, setSelectedBrands] = useState([]);
   
+  // Product Detail Modal State
+  const [selectedProductDetail, setSelectedProductDetail] = useState(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  
   // Cart state
   const [cart, setCart] = useState([]);
 
@@ -865,11 +869,14 @@ export default function PublicStoreView({
                           <Star size={10} fill="currentColor" /> 5.0
                         </div>
 
-                        <div>
+                        <div 
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => { setSelectedProductDetail(product); setActiveImageIndex(0); }}
+                        >
                           {/* Image Box */}
                           <div className="store-card-img-placeholder" style={{ padding: '16px' }}>
                             <img 
-                              src={product.imageUrl || "/logo-tunqui-red.png"} 
+                              src={(product.imageUrl?.split('\n').map(u => u.trim()).filter(Boolean)[0]) || "/logo-tunqui-red.png"} 
                               alt={product.name} 
                               style={{ 
                                 maxHeight: '90px', 
@@ -1832,6 +1839,249 @@ export default function PublicStoreView({
             </div>
           </div>
         </footer>
+      )}
+
+      {/* 7. PRODUCT DETAIL MODAL */}
+      {selectedProductDetail && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15,23,42,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999,
+          padding: '20px',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '850px',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+            overflow: 'hidden'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 24px',
+              borderBottom: '1px solid #e2e8f0',
+              background: '#f8fafc'
+            }}>
+              <div>
+                <span className="store-card-type-badge" style={{ marginBottom: '4px', display: 'inline-block' }}>{selectedProductDetail.type}</span>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                  {selectedProductDetail.brand} {selectedProductDetail.name}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setSelectedProductDetail(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  padding: '4px'
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{
+              padding: '24px',
+              overflowY: 'auto',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '24px',
+              flex: 1
+            }}>
+              {/* Left Column: Image Gallery */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                {/* Main Image view */}
+                {(() => {
+                  const imgs = selectedProductDetail.imageUrl?.split('\n').map(u => u.trim()).filter(Boolean) || [];
+                  const currentImg = imgs[activeImageIndex] || "/logo-tunqui-red.png";
+                  return (
+                    <>
+                      <div style={{
+                        width: '100%',
+                        height: '240px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        background: '#f8fafc',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '16px',
+                        boxSizing: 'border-box'
+                      }}>
+                        <img 
+                          src={currentImg} 
+                          alt={selectedProductDetail.name}
+                          style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                          onError={(e) => { e.target.src = "/logo-tunqui-red.png"; }}
+                        />
+                      </div>
+                      
+                      {/* Image Thumbnails */}
+                      {imgs.length > 1 && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%', justifyContent: 'center' }}>
+                          {imgs.map((img, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setActiveImageIndex(idx)}
+                              style={{
+                                width: '50px',
+                                height: '50px',
+                                border: idx === activeImageIndex ? '2px solid #dc2626' : '1px solid #e2e8f0',
+                                borderRadius: '4px',
+                                background: '#f8fafc',
+                                padding: '2px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <img 
+                                src={img} 
+                                alt="" 
+                                style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                                onError={(e) => { e.target.style.display = 'none'; }}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Right Column: Specs & Buy */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Description */}
+                <div>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Descripción</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', lineHeight: '1.45rem' }}>
+                    {selectedProductDetail.description || "Sin descripción adicional registrada."}
+                  </p>
+                </div>
+
+                {/* Technical Specifications */}
+                <div>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Especificaciones Técnicas</h4>
+                  {selectedProductDetail.technicalSpecs ? (
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                        <tbody>
+                          {selectedProductDetail.technicalSpecs.split('\n').map(s => s.trim()).filter(Boolean).map((specLine, sIdx) => {
+                            const parts = specLine.split(':');
+                            const label = parts[0]?.trim();
+                            const value = parts.slice(1).join(':')?.trim();
+                            return (
+                              <tr key={sIdx} style={{ background: sIdx % 2 === 0 ? '#f8fafc' : 'white', borderBottom: '1px solid #e2e8f0' }}>
+                                <td style={{ padding: '8px 12px', fontWeight: 'bold', color: '#0f172a', width: '40%', borderRight: '1px solid #e2e8f0' }}>{label}</td>
+                                <td style={{ padding: '8px 12px', color: '#475569' }}>{value || 'Sí'}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Consulte especificaciones detalladas con su asesor técnico.</p>
+                  )}
+                </div>
+
+                {/* Price and Stock status */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>Stock Disponible</span>
+                    <strong style={{ fontSize: '0.9rem', color: selectedProductDetail.qtyAvailable > 0 ? '#10b981' : '#dc2626' }}>
+                      {selectedProductDetail.qtyAvailable > 0 ? `${selectedProductDetail.qtyAvailable} Unidades` : 'Agotado'}
+                    </strong>
+                  </div>
+
+                  {isClient && (
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block' }}>Precio Unitario</span>
+                      <strong style={{ fontSize: '1.4rem', color: '#10b981', fontFamily: 'monospace' }}>
+                        {currency}{selectedProductDetail.price?.toFixed(2)}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  {selectedProductDetail.qtyAvailable > 0 ? (
+                    <button
+                      onClick={() => {
+                        addToCart(selectedProductDetail);
+                        alert(`"${selectedProductDetail.brand} ${selectedProductDetail.name}" agregado al carrito.`);
+                        setSelectedProductDetail(null);
+                      }}
+                      style={{
+                        flex: 1,
+                        background: '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        textTransform: 'uppercase',
+                        fontSize: '0.8rem'
+                      }}
+                    >
+                      🛒 Agregar al Carrito
+                    </button>
+                  ) : (
+                    <a
+                      href={`https://wa.me/51923030000?text=Hola,%20deseo%20cotizar%20el%20producto%20${encodeURIComponent(selectedProductDetail.brand + ' ' + selectedProductDetail.name)}%20que%20figura%20sin%20stock.`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        flex: 1,
+                        background: '#22c55e',
+                        color: 'white',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        textTransform: 'uppercase',
+                        fontSize: '0.8rem',
+                        textAlign: 'center',
+                        textDecoration: 'none',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      💬 Cotizar por WhatsApp
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
