@@ -2017,8 +2017,7 @@ export default function PublicStoreView({
 
                         const isHeading = 
                           isExplicitHeader || 
-                          knownHeadings.includes(cleanText.toUpperCase()) || 
-                          (cleanText.length < 40 && cleanText.toUpperCase() === cleanText && !/^[0-9•\-*]/.test(cleanText) && !cleanText.includes(':') && !cleanText.includes(' x '));
+                          knownHeadings.includes(cleanText.toUpperCase());
 
                         if (isHeading) {
                           return (
