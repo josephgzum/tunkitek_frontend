@@ -959,9 +959,34 @@ export default function PublicStoreView({
 
                           {/* Description snippet */}
                           {product.description && (
-                            <p className="store-card-desc">
+                            <p className="store-card-desc" style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxHeight: '4.5em',
+                              lineHeight: '1.5em',
+                              fontSize: '0.75rem',
+                              color: '#64748b',
+                              marginBottom: '4px',
+                              whiteSpace: 'normal'
+                            }}>
                               {product.description}
                             </p>
+                          )}
+                          {product.description && product.description.length > 80 && (
+                            <div style={{
+                              color: '#dc2626',
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              marginTop: '2px',
+                              marginBottom: '8px',
+                              cursor: 'pointer',
+                              display: 'inline-block'
+                            }}>
+                              Ver más
+                            </div>
                           )}
                         </div>
 
