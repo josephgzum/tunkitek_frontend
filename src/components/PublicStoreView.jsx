@@ -565,7 +565,7 @@ export default function PublicStoreView({
                   gap: '4px'
                 }}
               >
-                📊 Mi Panel de Distribuidor
+                📊 Mi Panel de Cliente
               </button>
             )}
           </div>
@@ -879,7 +879,7 @@ export default function PublicStoreView({
               {/* Client activation info */}
               {isClient && (
                 <div className="store-client-banner">
-                  <span>🔑 Distribuidor: <strong style={{ color: '#064e3b' }}>{currentUser.name}</strong>. Acceso exclusivo con precios autorizados.</span>
+                  <span>🔑 Cliente: <strong style={{ color: '#064e3b' }}>{currentUser.name}</strong>. Acceso exclusivo con precios autorizados.</span>
                   <span style={{ background: '#059669', color: 'white', padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Precios Visibles</span>
                 </div>
               )}
@@ -1043,7 +1043,7 @@ export default function PublicStoreView({
                                 >
                                   Iniciar sesión
                                 </button>
-                                <span style={{ color: '#94a3b8', display: 'block', fontWeight: 'normal', fontSize: '0.65rem', marginTop: '4px' }}>para ver precio de distribuidor</span>
+                                <span style={{ color: '#94a3b8', display: 'block', fontWeight: 'normal', fontSize: '0.65rem', marginTop: '4px' }}>para ver precio de cliente</span>
                               </div>
                               
                               {/* Cotizar con Asesor (WhatsApp) for Guests */}
@@ -1083,10 +1083,10 @@ export default function PublicStoreView({
           <div className="store-form-card">
             <div className="store-form-title">
               <User style={{ color: '#dc2626' }} size={24} />
-              <span>Acceso de Clientes / Distribuidores</span>
+              <span>Acceso de Clientes</span>
             </div>
             <p className="store-form-subtitle">
-              Ingresa tu documento tributario (DNI o RUC) y contraseña para acceder a precios de distribuidor y enviar pedidos.
+              Ingresa tu documento tributario (DNI o RUC) y contraseña para acceder a precios de cliente y enviar pedidos.
             </p>
 
             {loginErr && (
@@ -1112,7 +1112,7 @@ export default function PublicStoreView({
               </div>
 
               <div className="store-form-group">
-                <label className="store-form-label">Contraseña de Distribuidor *</label>
+                <label className="store-form-label">Contraseña del Cliente *</label>
                 <div className="store-form-input-wrapper">
                   <Lock size={16} className="store-form-icon" />
                   <input 
@@ -1220,7 +1220,7 @@ export default function PublicStoreView({
                   <input 
                     type="text"
                     required
-                    placeholder="Ej. Distribuidora Telecomunicaciones SAC"
+                    placeholder="Ej. ARS Consultores y Servicios S.A.C."
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     className="store-form-input"
@@ -1417,7 +1417,7 @@ export default function PublicStoreView({
                     ) : (
                       <div style={{ background: '#fefbeb', border: '1px solid #fde68a', padding: '12px', borderRadius: '6px', maxWidth: '350px' }}>
                         <p style={{ fontSize: '0.65rem', color: '#b45309', margin: 0, fontWeight: 600 }}>
-                          ⚠️ Podrás ver el total y enviar el pedido una vez que el administrador apruebe tu registro de distribuidor e inicies sesión.
+                          ⚠️ Podrás ver el total y enviar el pedido una vez que el administrador apruebe tu registro de cliente e inicies sesión.
                         </p>
                       </div>
                     )}
@@ -1600,7 +1600,7 @@ export default function PublicStoreView({
               {/* SUBSECTION: SUMMARY */}
               {accountSection === "summary" && (
                 <div>
-                  <h2 className="store-catalog-title" style={{ marginBottom: '16px' }}>Resumen de Cuenta Distribuidor</h2>
+                  <h2 className="store-catalog-title" style={{ marginBottom: '16px' }}>Resumen de Cuenta del Cliente</h2>
                   
                   {/* Financial Stats Cards Grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
