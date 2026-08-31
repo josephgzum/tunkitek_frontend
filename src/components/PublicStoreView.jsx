@@ -869,10 +869,22 @@ export default function PublicStoreView({
                           {/* Image Box */}
                           <div className="store-card-img-placeholder" style={{ padding: '16px' }}>
                             <img 
-                              src="/logo-tunqui-red.png" 
-                              alt="Tunkitek Logo" 
-                              style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', opacity: 0.9 }}
-                              onError={(e) => { e.target.style.display = 'none'; }}
+                              src={product.imageUrl || "/logo-tunqui-red.png"} 
+                              alt={product.name} 
+                              style={{ 
+                                maxHeight: '90px', 
+                                maxWidth: '100%', 
+                                objectFit: 'contain', 
+                                opacity: product.imageUrl ? 1 : 0.9 
+                              }}
+                              onError={(e) => { 
+                                if (product.imageUrl) {
+                                  e.target.src = "/logo-tunqui-red.png";
+                                  e.target.style.opacity = 0.9;
+                                } else {
+                                  e.target.style.display = 'none';
+                                }
+                              }}
                             />
                           </div>
 

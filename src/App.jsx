@@ -307,6 +307,7 @@ export default function App() {
   const [addProdControlMethod, setAddProdControlMethod] = useState("serialized");
   const [addProdDesc, setAddProdDesc] = useState("");
   const [addProdMinAlert, setAddProdMinAlert] = useState("2");
+  const [addProdImageUrl, setAddProdImageUrl] = useState("");
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isEditingProduct, setIsEditingProduct] = useState(false);
@@ -316,6 +317,7 @@ export default function App() {
   const [editProdControlMethod, setEditProdControlMethod] = useState("serialized");
   const [editProdDesc, setEditProdDesc] = useState("");
   const [editProdMinAlert, setEditProdMinAlert] = useState("");
+  const [editProdImageUrl, setEditProdImageUrl] = useState("");
 
   // Filters State (Devices)
   const [searchQuery, setSearchQuery] = useState("");
@@ -1349,7 +1351,8 @@ export default function App() {
       type: typeStr,
       controlMethod: addProdControlMethod,
       description: addProdDesc.trim(),
-      minStockAlert: parseInt(addProdMinAlert) || 2
+      minStockAlert: parseInt(addProdMinAlert) || 2,
+      imageUrl: addProdImageUrl.trim() || null
     };
 
     const updatedCatalog = [...catalog, newProd];
@@ -1376,6 +1379,7 @@ export default function App() {
     setAddProdControlMethod("serialized");
     setAddProdDesc("");
     setAddProdMinAlert("2");
+    setAddProdImageUrl("");
     alert(`Producto "${name}" agregado al catálogo con éxito.`);
     
     if (entradaSelectedProductId === "") {
@@ -1390,6 +1394,7 @@ export default function App() {
     setEditProdControlMethod(prod.controlMethod || (prod.type === "ONU" ? "serialized" : "quantity"));
     setEditProdDesc(prod.description || "");
     setEditProdMinAlert(String(prod.minStockAlert));
+    setEditProdImageUrl(prod.imageUrl || "");
     setSelectedProduct(prod);
     setIsEditingProduct(true);
   };
@@ -1409,7 +1414,8 @@ export default function App() {
       type: typeStr,
       controlMethod: editProdControlMethod,
       description: editProdDesc.trim(),
-      minStockAlert: parseInt(editProdMinAlert) || 2
+      minStockAlert: parseInt(editProdMinAlert) || 2,
+      imageUrl: editProdImageUrl.trim() || null
     };
 
     const isNowSerialized = editProdControlMethod === "serialized";
@@ -3976,6 +3982,19 @@ export default function App() {
                           placeholder="Especificaciones técnicas rápidas..."
                           value={addProdDesc}
                           onChange={(e) => setAddProdDesc(e.target.value)}
+                          className="form-control"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-row">
+                      <div className="form-group" style={{ flex: 1 }}>
+                        <label>URL de Imagen (Link de Google Drive / Directo / Imgur)</label>
+                        <input
+                          type="url"
+                          placeholder="https://drive.google.com/uc?export=download&id=... o link directo de imagen"
+                          value={addProdImageUrl}
+                          onChange={(e) => setAddProdImageUrl(e.target.value)}
                           className="form-control"
                         />
                       </div>
@@ -6630,6 +6649,19 @@ export default function App() {
                       type="text"
                       value={editProdDesc}
                       onChange={(e) => setEditProdDesc(e.target.value)}
+                      className="form-control"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>URL de Imagen (Link de Google Drive / Directo / Imgur)</label>
+                    <input
+                      type="url"
+                      placeholder="https://drive.google.com/uc?export=download&id=... o link directo de imagen"
+                      value={editProdImageUrl}
+                      onChange={(e) => setEditProdImageUrl(e.target.value)}
                       className="form-control"
                     />
                   </div>
