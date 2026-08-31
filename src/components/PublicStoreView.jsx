@@ -2008,6 +2008,38 @@ export default function PublicStoreView({
                   )}
                 </div>
 
+                {/* PDF Link */}
+                {selectedProductDetail.pdfUrl && (
+                  <div style={{ marginTop: '-8px' }}>
+                    <a 
+                      href={selectedProductDetail.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.8rem',
+                        color: '#dc2626',
+                        background: '#fee2e2',
+                        border: '1px dashed #fca5a5',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100%',
+                        justifyContent: 'center',
+                        boxSizing: 'border-box',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#fecaca'}
+                      onMouseOut={(e) => e.currentTarget.style.background = '#fee2e2'}
+                    >
+                      📄 Descargar Ficha Técnica Oficial (PDF)
+                    </a>
+                  </div>
+                )}
+
                 {/* Price and Stock status */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                   <div>
