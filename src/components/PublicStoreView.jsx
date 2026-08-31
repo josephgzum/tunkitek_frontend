@@ -59,8 +59,40 @@ export default function PublicStoreView({
   onLogout,
   hideHeader
 }) {
-  const [activeSubTab, setActiveSubTab] = useState("home"); // "home" | "store" | "register" | "cart" | "login-customer" | "login-staff" | "account" | "about-us"
+  // Get active sub tab from URL Hash to survive browser refreshes
+  const getTabFromHash = () => {
+    if (typeof window === 'undefined') return "home";
+    const hash = window.location.hash.replace('#', '');
+    const validTabs = ["home", "store", "register", "cart", "login-customer", "login-staff", "account", "about-us"];
+    if (validTabs.includes(hash)) {
+      return hash;
+    }
+    return "home";
+  };
+
+  const [activeSubTab, setActiveSubTab] = useState(getTabFromHash());
   const [accountSection, setAccountSection] = useState("summary"); // "summary" | "purchases" | "credits" | "orders"
+
+  // Synchronize hash with active tab state
+  useEffect(() => {
+    if (window.location.hash !== `#${activeSubTab}`) {
+      window.location.hash = activeSubTab;
+    }
+  }, [activeSubTab]);
+
+  // Listen for browser Back/Forward navigation changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const currentTab = getTabFromHash();
+      if (currentTab !== activeSubTab) {
+        setActiveSubTab(currentTab);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [activeSubTab]);
   
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -375,7 +407,7 @@ export default function PublicStoreView({
       {!hideHeader && (
         <header className="store-header">
           {/* Logo */}
-          <div className="store-logo" onClick={() => { setActiveSubTab("store"); setSelectedCategory("Todos"); }}>
+          <div className="store-logo" onClick={() => setActiveSubTab("home")}>
             TUNKI<span>TEK</span>
           </div>
 
