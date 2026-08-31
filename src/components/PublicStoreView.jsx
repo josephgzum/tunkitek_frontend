@@ -1986,22 +1986,18 @@ export default function PublicStoreView({
                 <div>
                   <h4 style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>Especificaciones Técnicas</h4>
                   {selectedProductDetail.technicalSpecs ? (
-                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-                        <tbody>
-                          {selectedProductDetail.technicalSpecs.split('\n').map(s => s.trim()).filter(Boolean).map((specLine, sIdx) => {
-                            const parts = specLine.split(':');
-                            const label = parts[0]?.trim();
-                            const value = parts.slice(1).join(':')?.trim();
-                            return (
-                              <tr key={sIdx} style={{ background: sIdx % 2 === 0 ? '#f8fafc' : 'white', borderBottom: '1px solid #e2e8f0' }}>
-                                <td style={{ padding: '8px 12px', fontWeight: 'bold', color: '#0f172a', width: '40%', borderRight: '1px solid #e2e8f0' }}>{label}</td>
-                                <td style={{ padding: '8px 12px', color: '#475569' }}>{value || 'Sí'}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                    <div style={{ 
+                      fontSize: '0.85rem', 
+                      color: '#475569', 
+                      lineHeight: '1.5rem', 
+                      background: '#f8fafc', 
+                      padding: '16px', 
+                      borderRadius: '8px', 
+                      border: '1px solid #e2e8f0',
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: 'inherit'
+                    }}>
+                      {selectedProductDetail.technicalSpecs}
                     </div>
                   ) : (
                     <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Consulte especificaciones detalladas con su asesor técnico.</p>
