@@ -960,17 +960,15 @@ export default function PublicStoreView({
                           {/* Description snippet */}
                           {product.description && (
                             <p className="store-card-desc" style={{
-                              display: '-webkit-box',
-                              WebkitLineClamp: 1,
-                              WebkitBoxOrient: 'vertical',
+                              display: 'block',
+                              whiteSpace: 'nowrap',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
-                              maxHeight: '1.5em',
-                              lineHeight: '1.5em',
                               fontSize: '0.75rem',
                               color: '#64748b',
                               marginBottom: '4px',
-                              whiteSpace: 'normal'
+                              width: '100%',
+                              boxSizing: 'border-box'
                             }}>
                               {product.description}
                             </p>
